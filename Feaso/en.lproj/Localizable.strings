@@ -1,0 +1,121 @@
+/* 
+  Localizable.strings
+  Feaso
+
+  English (Base) localization
+*/
+
+// MARK: - Common
+"EGP" = "EGP";
+"Cancel" = "Cancel";
+"Save" = "Save";
+"Edit" = "Edit";
+"Delete" = "Delete";
+"Confirm" = "Confirm";
+
+// MARK: - Tabs
+"Salesmen" = "Salesmen";
+"Products" = "Products";
+
+// MARK: - Salesmen List
+"Total Outstanding" = "Total Outstanding";
+"%lld salesmen with balance" = "%lld salesmen with balance";
+"Owed to you" = "Owed to you";
+"Settled" = "Settled";
+"No Salesmen" = "No Salesmen";
+"Add your first salesman to start tracking distributions." = "Add your first salesman to start tracking distributions.";
+"Add Salesman" = "Add Salesman";
+
+// MARK: - Salesman Detail
+"CURRENTLY OWES YOU" = "CURRENTLY OWES YOU";
+"PAID IN FULL" = "PAID IN FULL";
+"No outstanding balance" = "No outstanding balance";
+"Gave products" = "Gave products";
+"Record payment" = "Record payment";
+"Activity" = "Activity";
+"No activity yet" = "No activity yet";
+"Record a distribution or payment to begin." = "Record a distribution or payment to begin.";
+
+// MARK: - Activity Row
+"Payment received" = "Payment received";
+"Products returned" = "Products returned";
+"Adjustment" = "Adjustment";
+"Reversal" = "Reversal";
+"Cash" = "Cash";
+
+// MARK: - Transaction Options
+"Transaction Options" = "Transaction Options";
+"Reverse this transaction" = "Reverse this transaction";
+"Reverse Transaction?" = "Reverse Transaction?";
+"Reverse" = "Reverse";
+"This creates a new entry that undoes it. The original is preserved for the record." = "This creates a new entry that undoes it. The original is preserved for the record.";
+
+// MARK: - Salesman Editor
+"New Salesman" = "New Salesman";
+"Edit Salesman" = "Edit Salesman";
+"Name" = "Name";
+"Phone (optional)" = "Phone (optional)";
+"Notes (optional)" = "Notes (optional)";
+"Delete Salesman" = "Delete Salesman";
+"Delete Salesman?" = "Delete Salesman?";
+"Cannot delete a salesman with transaction history." = "Cannot delete a salesman with transaction history.";
+"This action cannot be undone." = "This action cannot be undone.";
+
+// MARK: - Give Products
+"Gave to %@" = "Gave to %@";
+"Add another product" = "Add another product";
+"%@ will owe" = "%@ will owe";
+"Current %@ + new %@" = "Current %@ + new %@";
+"Discard Distribution?" = "Discard Distribution?";
+"Items will not be recorded." = "Items will not be recorded.";
+"Discard" = "Discard";
+"Keep Editing" = "Keep Editing";
+"Stock Warning" = "Stock Warning";
+"%@: only %lld in stock, cart has %lld" = "%@: only %lld in stock, cart has %lld";
+"Proceed Anyway" = "Proceed Anyway";
+"Go Back" = "Go Back";
+"%lld in stock" = "%lld in stock";
+
+// MARK: - Product Picker
+"Pick product" = "Pick product";
+"Search products" = "Search products";
+
+// MARK: - Record Payment
+"Payment from %@" = "Payment from %@";
+"AMOUNT RECEIVED" = "AMOUNT RECEIVED";
+"%@ currently owes %@ EGP" = "%@ currently owes %@ EGP";
+"AFTER THIS PAYMENT" = "AFTER THIS PAYMENT";
+"%@ will owe" = "%@ will owe";
+"Includes overpayment of %@ EGP" = "Includes overpayment of %@ EGP";
+"NOTE (OPTIONAL)" = "NOTE (OPTIONAL)";
+"Cash, in person" = "Cash, in person";
+"Confirm Payment" = "Confirm Payment";
+"Overpayment" = "Overpayment";
+"This is more than %@ currently owes. Record an overpayment of %@ EGP?" = "This is more than %@ currently owes. Record an overpayment of %@ EGP?";
+"Record Overpayment" = "Record Overpayment";
+
+// MARK: - Products List
+"Inventory Value" = "Inventory Value";
+"%lld products" = "%lld products";
+"All Products" = "All Products";
+"No Products" = "No Products";
+"Add your first product to start tracking inventory." = "Add your first product to start tracking inventory.";
+"Add Product" = "Add Product";
+"Cost" = "Cost";
+"Sell" = "Sell";
+"Out of stock" = "Out of stock";
+
+// MARK: - Product Editor
+"New Product" = "New Product";
+"Edit Product" = "Edit Product";
+"Pricing" = "Pricing";
+"Cost Price" = "Cost Price";
+"Selling Price" = "Selling Price";
+"Inventory" = "Inventory";
+"Opening Stock" = "Opening Stock";
+"Reorder Threshold" = "Reorder Threshold";
+"None" = "None";
+"You'll see a warning when stock falls to or below the threshold." = "You'll see a warning when stock falls to or below the threshold.";
+"Delete Product" = "Delete Product";
+"Delete Product?" = "Delete Product?";
+"Cannot delete a product that has been distributed." = "Cannot delete a product that has been distributed.";

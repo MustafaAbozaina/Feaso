@@ -1,0 +1,120 @@
+/* 
+  Localizable.strings
+  Feaso
+
+  Arabic localization
+*/
+
+// MARK: - Common
+"EGP" = "ج.م";
+"Cancel" = "إلغاء";
+"Save" = "حفظ";
+"Edit" = "تعديل";
+"Delete" = "حذف";
+"Confirm" = "تأكيد";
+
+// MARK: - Tabs
+"Salesmen" = "المندوبين";
+"Products" = "المنتجات";
+
+// MARK: - Salesmen List
+"Total Outstanding" = "إجمالي المستحقات";
+"%lld salesmen with balance" = "%lld مندوبين لديهم رصيد";
+"Owed to you" = "مستحق لك";
+"Settled" = "تم التسوية";
+"No Salesmen" = "لا يوجد مندوبين";
+"Add your first salesman to start tracking distributions." = "أضف أول مندوب لبدء تتبع التوزيعات.";
+"Add Salesman" = "إضافة مندوب";
+
+// MARK: - Salesman Detail
+"CURRENTLY OWES YOU" = "مدين لك حالياً";
+"PAID IN FULL" = "تم السداد بالكامل";
+"No outstanding balance" = "لا يوجد رصيد مستحق";
+"Gave products" = "تسليم منتجات";
+"Record payment" = "تسجيل دفعة";
+"Activity" = "النشاط";
+"No activity yet" = "لا يوجد نشاط بعد";
+"Record a distribution or payment to begin." = "سجّل توزيع أو دفعة للبدء.";
+
+// MARK: - Activity Row
+"Payment received" = "تم استلام دفعة";
+"Products returned" = "تم إرجاع منتجات";
+"Adjustment" = "تعديل";
+"Reversal" = "إلغاء";
+"Cash" = "نقداً";
+
+// MARK: - Transaction Options
+"Transaction Options" = "خيارات المعاملة";
+"Reverse this transaction" = "إلغاء هذه المعاملة";
+"Reverse Transaction?" = "إلغاء المعاملة؟";
+"Reverse" = "إلغاء";
+"This creates a new entry that undoes it. The original is preserved for the record." = "سيتم إنشاء قيد جديد يلغي هذه المعاملة. سيتم الاحتفاظ بالأصل للسجلات.";
+
+// MARK: - Salesman Editor
+"New Salesman" = "مندوب جديد";
+"Edit Salesman" = "تعديل المندوب";
+"Name" = "الاسم";
+"Phone (optional)" = "الهاتف (اختياري)";
+"Notes (optional)" = "ملاحظات (اختياري)";
+"Delete Salesman" = "حذف المندوب";
+"Delete Salesman?" = "حذف المندوب؟";
+"Cannot delete a salesman with transaction history." = "لا يمكن حذف مندوب لديه سجل معاملات.";
+"This action cannot be undone." = "لا يمكن التراجع عن هذا الإجراء.";
+
+// MARK: - Give Products
+"Gave to %@" = "تسليم إلى %@";
+"Add another product" = "إضافة منتج آخر";
+"%@ will owe" = "%@ سيكون مديناً بـ";
+"Current %@ + new %@" = "الحالي %@ + الجديد %@";
+"Discard Distribution?" = "تجاهل التوزيع؟";
+"Items will not be recorded." = "لن يتم تسجيل العناصر.";
+"Discard" = "تجاهل";
+"Keep Editing" = "متابعة التعديل";
+"Stock Warning" = "تحذير المخزون";
+"%@: only %lld in stock, cart has %lld" = "%@: يوجد فقط %lld في المخزون، السلة تحتوي %lld";
+"Proceed Anyway" = "المتابعة على أي حال";
+"Go Back" = "رجوع";
+"%lld in stock" = "%lld في المخزون";
+
+// MARK: - Product Picker
+"Pick product" = "اختر منتج";
+"Search products" = "بحث في المنتجات";
+
+// MARK: - Record Payment
+"Payment from %@" = "دفعة من %@";
+"AMOUNT RECEIVED" = "المبلغ المستلم";
+"%@ currently owes %@ EGP" = "%@ مدين حالياً بـ %@ ج.م";
+"AFTER THIS PAYMENT" = "بعد هذه الدفعة";
+"Includes overpayment of %@ EGP" = "يشمل دفعة زائدة بـ %@ ج.م";
+"NOTE (OPTIONAL)" = "ملاحظة (اختياري)";
+"Cash, in person" = "نقداً، شخصياً";
+"Confirm Payment" = "تأكيد الدفعة";
+"Overpayment" = "دفعة زائدة";
+"This is more than %@ currently owes. Record an overpayment of %@ EGP?" = "هذا أكثر مما يدين به %@ حالياً. هل تريد تسجيل دفعة زائدة بـ %@ ج.م؟";
+"Record Overpayment" = "تسجيل الدفعة الزائدة";
+
+// MARK: - Products List
+"Inventory Value" = "قيمة المخزون";
+"%lld products" = "%lld منتج";
+"All Products" = "جميع المنتجات";
+"No Products" = "لا يوجد منتجات";
+"Add your first product to start tracking inventory." = "أضف أول منتج لبدء تتبع المخزون.";
+"Add Product" = "إضافة منتج";
+"Cost" = "التكلفة";
+"Sell" = "البيع";
+"Out of stock" = "نفد من المخزون";
+
+// MARK: - Product Editor
+"New Product" = "منتج جديد";
+"Edit Product" = "تعديل المنتج";
+"Pricing" = "التسعير";
+"Cost Price" = "سعر التكلفة";
+"Selling Price" = "سعر البيع";
+"Inventory" = "المخزون";
+"Opening Stock" = "المخزون الافتتاحي";
+"Reorder Threshold" = "حد إعادة الطلب";
+"None" = "لا يوجد";
+"You'll see a warning when stock falls to or below the threshold." = "ستظهر تحذير عندما ينخفض المخزون إلى أو أقل من الحد.";
+"Delete Product" = "حذف المنتج";
+"Delete Product?" = "حذف المنتج؟";
+"Cannot delete a product that has been distributed." = "لا يمكن حذف منتج تم توزيعه.";
