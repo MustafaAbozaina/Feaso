@@ -13,6 +13,12 @@ struct SalesmenListView: View {
             .sorted { $0.balance > $1.balance }
     }
     
+    private var overpaid: [Salesman] {
+        salesmen
+            .filter { $0.balance < 0 }
+            .sorted { $0.balance < $1.balance }
+    }
+    
     private var settled: [Salesman] {
         salesmen
             .filter { $0.balance == 0 }
@@ -85,6 +91,21 @@ struct SalesmenListView: View {
                     }
                 } header: {
                     Text(String(localized: "Owed to you"))
+                        .textCase(.uppercase)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+            }
+            
+            if !overpaid.isEmpty {
+                Section {
+                    ForEach(overpaid) { salesman in
+                        NavigationLink(value: salesman) {
+                            SalesmanRow(salesman: salesman, isSettled: false)
+                        }
+                    }
+                } header: {
+                    Text(String(localized: "You owe them"))
                         .textCase(.uppercase)
                         .font(.caption)
                         .fontWeight(.medium)

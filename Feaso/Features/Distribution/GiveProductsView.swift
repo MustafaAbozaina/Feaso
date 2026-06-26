@@ -317,7 +317,9 @@ private struct QuantityStepperView: View {
                 Image(systemName: "minus")
                     .font(.system(size: 14, weight: .semibold))
                     .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.borderless)
             .tint(Color.Theme.ink)
             
             Text("\(quantity)")
@@ -333,7 +335,9 @@ private struct QuantityStepperView: View {
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .semibold))
                     .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.borderless)
             .tint(Color.Theme.ink)
         }
         .background(Color.Theme.surface2)

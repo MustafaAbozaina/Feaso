@@ -115,15 +115,20 @@ struct SalesmanDetailView: View {
                             .foregroundStyle(.white)
                     }
                     .frame(maxWidth: .infinity)
+                    .font(.subheadline)
+                    .frame(height: 40)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Color.Theme.accent)
+                
                 
                 Button {
                     navigateToRecordPayment = true
                 } label: {
                     Label(String(localized: "Record payment"), systemImage: "checkmark.circle")
                         .frame(maxWidth: .infinity)
+                        .font(.subheadline)
+                        .frame(height: 40)
                 }
                 .buttonStyle(.bordered)
                 .tint(Color.Theme.success)

@@ -21,6 +21,7 @@
 "Total Outstanding" = "إجمالي المستحقات";
 "%lld salesmen with balance" = "%lld مندوبين لديهم رصيد";
 "Owed to you" = "مستحق لك";
+"You owe them" = "مستحق لهم";
 "Settled" = "تم التسوية";
 "No Salesmen" = "لا يوجد مندوبين";
 "Add your first salesman to start tracking distributions." = "أضف أول مندوب لبدء تتبع التوزيعات.";

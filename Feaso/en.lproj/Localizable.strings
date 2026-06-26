@@ -21,6 +21,7 @@
 "Total Outstanding" = "Total Outstanding";
 "%lld salesmen with balance" = "%lld salesmen with balance";
 "Owed to you" = "Owed to you";
+"You owe them" = "You owe them";
 "Settled" = "Settled";
 "No Salesmen" = "No Salesmen";
 "Add your first salesman to start tracking distributions." = "Add your first salesman to start tracking distributions.";
