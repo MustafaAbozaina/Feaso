@@ -1,0 +1,451 @@
+import SwiftUI
+
+struct TransactionDetailView: View {
+    let transaction: Transaction
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingFullScreenImage = false
+    
+    private var title: String {
+        if transaction.isReversal {
+            return String(localized: "Reversal")
+        }
+        switch transaction.type {
+        case .payment:
+            return String(localized: "Payment")
+        case .distribution:
+            return String(localized: "Distribution")
+        case .return:
+            return String(localized: "Return")
+        case .adjustment:
+            return String(localized: "Adjustment")
+        }
+    }
+    
+    private var iconName: String {
+        switch transaction.type {
+        case .payment:
+            return "checkmark.circle.fill"
+        case .distribution:
+            return "arrow.right.circle.fill"
+        case .return:
+            return "arrow.uturn.backward.circle.fill"
+        case .adjustment:
+            return transaction.isReversal ? "arrow.uturn.backward.circle.fill" : "pencil.circle.fill"
+        }
+    }
+    
+    private var iconColor: Color {
+        if transaction.isReversed {
+            return Color.Theme.ink3
+        }
+        switch transaction.type {
+        case .payment:
+            return Color.Theme.success
+        case .distribution:
+            return Color.Theme.accent
+        case .return, .adjustment:
+            return Color.Theme.ink2
+        }
+    }
+    
+    private var amountSign: String {
+        transaction.amount < 0 ? "−" : "+"
+    }
+    
+    private var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        formatter.timeStyle = .short
+        return formatter.string(from: transaction.occurredAt)
+    }
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: Spacing.xl) {
+                headerCard
+                
+                if !transaction.items.isEmpty {
+                    itemsCard
+                }
+                
+                detailsCard
+                
+                if transaction.hasAttachment {
+                    attachmentCard
+                }
+                
+                if transaction.isReversed {
+                    reversedBanner
+                }
+            }
+            .padding(Spacing.lg)
+        }
+        .background(Color.Theme.background)
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(isPresented: $showingFullScreenImage) {
+            if let fileName = transaction.attachmentFileName,
+               let image = ImageAttachmentService.loadImage(fileName: fileName) {
+                FullScreenImageView(image: image)
+            }
+        }
+    }
+    
+    // MARK: - Header Card
+    
+    private var headerCard: some View {
+        VStack(spacing: Spacing.lg) {
+            // Icon
+            Image(systemName: iconName)
+                .font(.system(size: 48))
+                .foregroundStyle(iconColor)
+            
+            // Amount
+            VStack(spacing: Spacing.xs) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(amountSign)
+                        .font(.system(size: 36, weight: .bold))
+                    Text(CurrencyFormatter.string(abs(transaction.amount)))
+                        .font(.system(size: 36, weight: .bold))
+                    Text(CurrencyFormatter.symbol)
+                        .font(.title2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.Theme.ink2)
+                }
+                .foregroundStyle(transaction.isReversed ? Color.Theme.ink3 : Color.Theme.ink)
+                
+                Text(transactionDescription)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.Theme.ink2)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Spacing.xl)
+        .padding(.horizontal, Spacing.lg)
+        .background(Color.Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.lg))
+        .opacity(transaction.isReversed ? 0.7 : 1.0)
+    }
+    
+    private var transactionDescription: String {
+        guard let salesman = transaction.salesman else {
+            return ""
+        }
+        
+        switch transaction.type {
+        case .payment:
+            return String(localized: "Payment received from \(salesman.name)")
+        case .distribution:
+            return String(localized: "Products given to \(salesman.name)")
+        case .return:
+            return String(localized: "Products returned by \(salesman.name)")
+        case .adjustment:
+            if transaction.isReversal {
+                return String(localized: "Reversal for \(salesman.name)")
+            }
+            return String(localized: "Balance adjustment for \(salesman.name)")
+        }
+    }
+    
+    // MARK: - Items Card
+    
+    private var itemsCard: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Text(String(localized: "ITEMS"))
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Theme.ink2)
+            
+            VStack(spacing: 0) {
+                ForEach(Array(transaction.items.enumerated()), id: \.element.id) { index, item in
+                    if index > 0 {
+                        Divider()
+                            .padding(.horizontal, Spacing.md)
+                    }
+                    
+                    TransactionItemRow(item: item)
+                }
+            }
+            .background(Color.Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        }
+    }
+    
+    // MARK: - Details Card
+    
+    private var detailsCard: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Text(String(localized: "DETAILS"))
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Theme.ink2)
+            
+            VStack(spacing: 0) {
+                // Date
+                DetailRow(
+                    label: String(localized: "Date"),
+                    value: formattedDate
+                )
+                
+                Divider()
+                    .padding(.horizontal, Spacing.md)
+                
+                // Salesman
+                if let salesman = transaction.salesman {
+                    DetailRow(
+                        label: String(localized: "Salesman"),
+                        value: salesman.name
+                    )
+                    
+                    Divider()
+                        .padding(.horizontal, Spacing.md)
+                }
+                
+                // Type
+                DetailRow(
+                    label: String(localized: "Type"),
+                    value: typeDisplayName
+                )
+                
+                // Note
+                if let note = transaction.note, !note.isEmpty {
+                    Divider()
+                        .padding(.horizontal, Spacing.md)
+                    
+                    DetailRow(
+                        label: String(localized: "Note"),
+                        value: note
+                    )
+                }
+                
+                // Transaction ID
+                Divider()
+                    .padding(.horizontal, Spacing.md)
+                
+                DetailRow(
+                    label: String(localized: "Reference"),
+                    value: String(transaction.id.uuidString.prefix(8)).uppercased()
+                )
+            }
+            .background(Color.Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        }
+    }
+    
+    private var typeDisplayName: String {
+        switch transaction.type {
+        case .payment:
+            return String(localized: "Payment")
+        case .distribution:
+            return String(localized: "Distribution")
+        case .return:
+            return String(localized: "Return")
+        case .adjustment:
+            return transaction.isReversal ? String(localized: "Reversal") : String(localized: "Adjustment")
+        }
+    }
+    
+    // MARK: - Attachment Card
+    
+    private var attachmentCard: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Text(String(localized: "ATTACHMENT"))
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Theme.ink2)
+            
+            if let fileName = transaction.attachmentFileName,
+               let image = ImageAttachmentService.loadImage(fileName: fileName) {
+                Button {
+                    showingFullScreenImage = true
+                } label: {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 200)
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+                        .overlay(alignment: .bottomTrailing) {
+                            HStack(spacing: Spacing.xs) {
+                                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                    .font(.caption)
+                                Text(String(localized: "Tap to view"))
+                                    .font(.caption)
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, Spacing.sm)
+                            .padding(.vertical, Spacing.xs)
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
+                            .padding(Spacing.sm)
+                        }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Reversed Banner
+    
+    private var reversedBanner: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.body)
+            
+            Text(String(localized: "This transaction has been reversed"))
+                .font(.subheadline)
+        }
+        .foregroundStyle(Color.Theme.warning)
+        .frame(maxWidth: .infinity)
+        .padding(Spacing.md)
+        .background(Color.Theme.warningBg)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+    }
+}
+
+// MARK: - Transaction Item Row
+
+private struct TransactionItemRow: View {
+    let item: TransactionItem
+    
+    var body: some View {
+        HStack(spacing: Spacing.md) {
+            // Quantity badge
+            Text("\(item.quantity)×")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.Theme.accent)
+                .frame(width: 40, alignment: .leading)
+            
+            // Product name
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.product?.name ?? String(localized: "Unknown Product"))
+                    .font(.body)
+                    .foregroundStyle(Color.Theme.ink)
+                
+                Text("\(CurrencyFormatter.string(item.unitPrice)) \(CurrencyFormatter.symbol) \(String(localized: "each"))")
+                    .font(.caption)
+                    .foregroundStyle(Color.Theme.ink3)
+            }
+            
+            Spacer()
+            
+            // Line total
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(CurrencyFormatter.string(item.lineTotal))
+                    .font(.body)
+                    .fontWeight(.medium)
+                Text(CurrencyFormatter.symbol)
+                    .font(.caption)
+            }
+            .foregroundStyle(Color.Theme.ink)
+        }
+        .padding(Spacing.md)
+    }
+}
+
+// MARK: - Detail Row
+
+private struct DetailRow: View {
+    let label: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(Color.Theme.ink2)
+            
+            Spacer()
+            
+            Text(value)
+                .font(.subheadline)
+                .foregroundStyle(Color.Theme.ink)
+                .multilineTextAlignment(.trailing)
+        }
+        .padding(Spacing.md)
+    }
+}
+
+// MARK: - Full Screen Image View
+
+private struct FullScreenImageView: View {
+    let image: UIImage
+    @Environment(\.dismiss) private var dismiss
+    @State private var scale: CGFloat = 1.0
+    
+    var body: some View {
+        NavigationStack {
+            GeometryReader { geometry in
+                ScrollView([.horizontal, .vertical], showsIndicators: false) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: geometry.size.width * scale)
+                        .frame(minHeight: geometry.size.height)
+                }
+            }
+            .background(Color.black)
+            .ignoresSafeArea()
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                }
+                
+                ToolbarItem(placement: .primaryAction) {
+                    HStack(spacing: Spacing.md) {
+                        Button {
+                            withAnimation {
+                                scale = max(1.0, scale - 0.5)
+                            }
+                        } label: {
+                            Image(systemName: "minus.magnifyingglass")
+                                .font(.title3)
+                                .foregroundStyle(.white.opacity(0.8))
+                        }
+                        
+                        Button {
+                            withAnimation {
+                                scale = min(3.0, scale + 0.5)
+                            }
+                        } label: {
+                            Image(systemName: "plus.magnifyingglass")
+                                .font(.title3)
+                                .foregroundStyle(.white.opacity(0.8))
+                        }
+                    }
+                }
+            }
+            .toolbarBackground(.black, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+        }
+    }
+}
+
+#Preview("Distribution") {
+    NavigationStack {
+        TransactionDetailView(transaction: {
+            let s = Salesman(name: "Ahmed")
+            let t = Transaction(type: .distribution, amount: 26000, salesman: s)
+            return t
+        }())
+    }
+}
+
+#Preview("Payment") {
+    NavigationStack {
+        TransactionDetailView(transaction: {
+            let s = Salesman(name: "Ahmed")
+            let t = Transaction(type: .payment, amount: -5000, salesman: s, note: "Partial payment - cash")
+            return t
+        }())
+    }
+}

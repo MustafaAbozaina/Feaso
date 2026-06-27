@@ -10,6 +10,9 @@ final class Transaction {
     var note: String?
     var createdAt: Date
     
+    /// Stores the file name of the attached image (stored in app's documents directory)
+    var attachmentFileName: String?
+    
     var salesman: Salesman?
     
     @Relationship(deleteRule: .cascade, inverse: \TransactionItem.transaction)
@@ -28,7 +31,8 @@ final class Transaction {
         amount: Decimal,
         salesman: Salesman,
         occurredAt: Date = .now,
-        note: String? = nil
+        note: String? = nil,
+        attachmentFileName: String? = nil
     ) {
         self.id = UUID()
         self.typeRaw = type.rawValue
@@ -36,9 +40,11 @@ final class Transaction {
         self.salesman = salesman
         self.occurredAt = occurredAt
         self.note = note
+        self.attachmentFileName = attachmentFileName
         self.createdAt = .now
     }
     
     var isReversed: Bool { reversedBy != nil }
     var isReversal: Bool { reverses != nil }
+    var hasAttachment: Bool { attachmentFileName != nil }
 }

@@ -19,7 +19,7 @@ struct BalanceHeroCard: View {
                     .font(.hero)
                     .foregroundStyle(isSettled ? Color.Theme.success : Color.Theme.accent)
                 
-                Text(String(localized: "EGP"))
+                Text(CurrencyFormatter.symbol)
                     .font(.title3)
                     .foregroundStyle(Color.Theme.ink3)
             }

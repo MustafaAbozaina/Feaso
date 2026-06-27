@@ -11,6 +11,10 @@ struct GiveProductsView: View {
     @State private var showingPicker = false
     @State private var showingDiscardAlert = false
     @State private var showingStockWarning = false
+    @State private var attachedImage: UIImage?
+    @State private var showingAttachmentSheet = false
+    @State private var showingCamera = false
+    @State private var showingPhotoLibrary = false
     
     private var newTotal: Decimal {
         lines.reduce(Decimal(0)) { $0 + $1.lineTotal }
@@ -87,6 +91,24 @@ struct GiveProductsView: View {
         } message: {
             Text(stockWarningMessage)
         }
+        .sheet(isPresented: $showingAttachmentSheet) {
+            AttachmentSourceSheet(
+                isPresented: $showingAttachmentSheet,
+                onSelectCamera: {
+                    showingCamera = true
+                },
+                onSelectLibrary: {
+                    showingPhotoLibrary = true
+                }
+            )
+        }
+        .fullScreenCover(isPresented: $showingCamera) {
+            ImagePicker(image: $attachedImage, sourceType: .camera)
+                .ignoresSafeArea()
+        }
+        .sheet(isPresented: $showingPhotoLibrary) {
+            ImagePicker(image: $attachedImage, sourceType: .photoLibrary)
+        }
     }
     
     // MARK: - Cart List
@@ -126,9 +148,31 @@ struct GiveProductsView: View {
                 ))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+            
+            attachmentSection
+                .listRowInsets(EdgeInsets(
+                    top: Spacing.sm,
+                    leading: Spacing.lg,
+                    bottom: Spacing.sm,
+                    trailing: Spacing.lg
+                ))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+    }
+    
+    private var attachmentSection: some View {
+        AttachmentButton(
+            attachedImage: attachedImage,
+            onTap: {
+                showingAttachmentSheet = true
+            },
+            onRemove: {
+                attachedImage = nil
+            }
+        )
     }
     
     private var addProductButton: some View {
@@ -170,7 +214,7 @@ struct GiveProductsView: View {
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.Theme.ink)
                         
-                        Text(String(localized: "EGP"))
+                        Text(CurrencyFormatter.symbol)
                             .font(.caption)
                             .foregroundStyle(Color.Theme.ink3)
                     }
@@ -217,11 +261,19 @@ struct GiveProductsView: View {
     }
     
     private func confirmDistribution() {
+        // Save attachment if present
+        var attachmentFileName: String? = nil
+        if let image = attachedImage {
+            let transactionId = UUID()
+            attachmentFileName = ImageAttachmentService.saveImage(image, for: transactionId)
+        }
+        
         let items = lines.map { ($0.product, $0.quantity) }
         do {
             try LedgerService.recordDistribution(
                 to: salesman,
                 items: items,
+                attachmentFileName: attachmentFileName,
                 in: modelContext
             )
             dismiss()
@@ -258,7 +310,7 @@ private struct CartItemCard: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Theme.ink)
                     
-                    Text(String(localized: "EGP"))
+                    Text(CurrencyFormatter.symbol)
                         .font(.caption)
                         .foregroundStyle(Color.Theme.ink3)
                 }
@@ -274,7 +326,7 @@ private struct CartItemCard: View {
                 
                 HStack(spacing: Spacing.xs) {
                     Text(CurrencyFormatter.string(line.productSellingPrice))
-                    Text(String(localized: "EGP"))
+                    Text(CurrencyFormatter.symbol)
                     Text("·")
                     Text(String(localized: "\(line.productCurrentStock) in stock"))
                 }

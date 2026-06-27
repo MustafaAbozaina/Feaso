@@ -44,12 +44,25 @@
 "Reversal" = "إلغاء";
 "Cash" = "نقداً";
 
-// MARK: - Transaction Options
-"Transaction Options" = "خيارات المعاملة";
-"Reverse this transaction" = "إلغاء هذه المعاملة";
-"Reverse Transaction?" = "إلغاء المعاملة؟";
-"Reverse" = "إلغاء";
-"This creates a new entry that undoes it. The original is preserved for the record." = "سيتم إنشاء قيد جديد يلغي هذه المعاملة. سيتم الاحتفاظ بالأصل للسجلات.";
+// MARK: - Transaction Detail
+"Payment" = "دفعة";
+"Distribution" = "توزيع";
+"Return" = "إرجاع";
+"Payment received from %@" = "دفعة مستلمة من %@";
+"Products given to %@" = "منتجات مسلمة إلى %@";
+"Products returned by %@" = "منتجات مرتجعة من %@";
+"Reversal for %@" = "إلغاء لـ %@";
+"Balance adjustment for %@" = "تعديل رصيد لـ %@";
+"ITEMS" = "العناصر";
+"DETAILS" = "التفاصيل";
+"Date" = "التاريخ";
+"Salesman" = "المندوب";
+"Type" = "النوع";
+"Note" = "ملاحظة";
+"Reference" = "المرجع";
+"each" = "للقطعة";
+"Unknown Product" = "منتج غير معروف";
+"This transaction has been reversed" = "تم إلغاء هذه المعاملة";
 
 // MARK: - Salesman Editor
 "New Salesman" = "مندوب جديد";
@@ -84,14 +97,14 @@
 // MARK: - Record Payment
 "Payment from %@" = "دفعة من %@";
 "AMOUNT RECEIVED" = "المبلغ المستلم";
-"%@ currently owes %@ EGP" = "%@ مدين حالياً بـ %@ ج.م";
+"%@ currently owes %@ %@" = "%@ مدين حالياً بـ %@ %@";
 "AFTER THIS PAYMENT" = "بعد هذه الدفعة";
-"Includes overpayment of %@ EGP" = "يشمل دفعة زائدة بـ %@ ج.م";
+"Includes overpayment of %@ %@" = "يشمل دفعة زائدة بـ %@ %@";
 "NOTE (OPTIONAL)" = "ملاحظة (اختياري)";
 "Cash, in person" = "نقداً، شخصياً";
 "Confirm Payment" = "تأكيد الدفعة";
 "Overpayment" = "دفعة زائدة";
-"This is more than %@ currently owes. Record an overpayment of %@ EGP?" = "هذا أكثر مما يدين به %@ حالياً. هل تريد تسجيل دفعة زائدة بـ %@ ج.م؟";
+"This is more than %@ currently owes. Record an overpayment of %@ %@?" = "هذا أكثر مما يدين به %@ حالياً. هل تريد تسجيل دفعة زائدة بـ %@ %@؟";
 "Record Overpayment" = "تسجيل الدفعة الزائدة";
 
 // MARK: - Products List
@@ -119,3 +132,45 @@
 "Delete Product" = "حذف المنتج";
 "Delete Product?" = "حذف المنتج؟";
 "Cannot delete a product that has been distributed." = "لا يمكن حذف منتج تم توزيعه.";
+
+// MARK: - Settings
+"Settings" = "الإعدادات";
+"Language" = "اللغة";
+"Currency" = "العملة";
+"Gulf Currencies" = "عملات الخليج";
+"System Default" = "افتراضي النظام";
+"English" = "English";
+"العربية" = "العربية";
+"Restart Required" = "إعادة التشغيل مطلوبة";
+"Please restart the app for the language change to take effect." = "يرجى إعادة تشغيل التطبيق لتطبيق تغيير اللغة.";
+"Restart the app for language changes to take effect." = "أعد تشغيل التطبيق لتطبيق تغييرات اللغة.";
+"OK" = "موافق";
+
+// MARK: - Currencies
+"Egyptian Pound (EGP)" = "جنيه مصري (ج.م)";
+"US Dollar (USD)" = "دولار أمريكي ($)";
+"Saudi Riyal (SAR)" = "ريال سعودي (ر.س)";
+"UAE Dirham (AED)" = "درهم إماراتي (د.إ)";
+"Kuwaiti Dinar (KWD)" = "دينار كويتي (د.ك)";
+"Bahraini Dinar (BHD)" = "دينار بحريني (د.ب)";
+"Omani Rial (OMR)" = "ريال عماني (ر.ع)";
+"Qatari Riyal (QAR)" = "ريال قطري (ر.ق)";
+"USD" = "دولار";
+"SAR" = "ر.س";
+"AED" = "د.إ";
+"KWD" = "د.ك";
+"BHD" = "د.ب";
+"OMR" = "ر.ع";
+"QAR" = "ر.ق";
+// MARK: - Attachments
+"ATTACHMENT (OPTIONAL)" = "المرفق (اختياري)";
+"ATTACHMENT" = "المرفق";
+"Add Receipt or Photo" = "إضافة إيصال أو صورة";
+"Add Attachment" = "إضافة مرفق";
+"Take Photo" = "التقاط صورة";
+"Capture receipt or document" = "التقاط إيصال أو مستند";
+"Choose from Library" = "اختيار من المعرض";
+"Select existing photo" = "اختيار صورة موجودة";
+"Tap to view" = "اضغط للعرض";
+"Remove" = "إزالة";
+

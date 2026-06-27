@@ -9,7 +9,13 @@ enum CurrencyFormatter {
         return f
     }()
     
+    /// Formats amount as a number string (without currency symbol)
     static func string(_ amount: Decimal) -> String {
         formatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
+    }
+    
+    /// Returns the current currency symbol (localized)
+    static var symbol: String {
+        SettingsManager.shared.selectedCurrency.localizedSymbol
     }
 }

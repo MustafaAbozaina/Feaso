@@ -16,6 +16,13 @@ struct RootView: View {
             .tabItem {
                 Label(String(localized: "Products"), systemImage: "shippingbox.fill")
             }
+            
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem {
+                Label(String(localized: "Settings"), systemImage: "gearshape.fill")
+            }
         }
         .tint(Color.Theme.accent)
     }

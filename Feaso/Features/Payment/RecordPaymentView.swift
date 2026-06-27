@@ -11,6 +11,10 @@ struct RecordPaymentView: View {
     @State private var amountText = ""
     @State private var note = ""
     @State private var showingOverpaymentAlert = false
+    @State private var attachedImage: UIImage?
+    @State private var showingAttachmentSheet = false
+    @State private var showingCamera = false
+    @State private var showingPhotoLibrary = false
     @FocusState private var isAmountFocused: Bool
     
     private var amount: Decimal {
@@ -40,6 +44,7 @@ struct RecordPaymentView: View {
                     amountCard
                     previewCard
                     noteField
+                    attachmentSection
                 }
                 .padding(Spacing.lg)
             }
@@ -61,7 +66,25 @@ struct RecordPaymentView: View {
             }
             Button(String(localized: "Cancel"), role: .cancel) {}
         } message: {
-            Text(String(localized: "This is more than \(salesman.name) currently owes. Record an overpayment of \(CurrencyFormatter.string(overpaymentAmount)) EGP?"))
+            Text(String(localized: "This is more than \(salesman.name) currently owes. Record an overpayment of \(CurrencyFormatter.string(overpaymentAmount)) \(CurrencyFormatter.symbol)?"))
+        }
+        .sheet(isPresented: $showingAttachmentSheet) {
+            AttachmentSourceSheet(
+                isPresented: $showingAttachmentSheet,
+                onSelectCamera: {
+                    showingCamera = true
+                },
+                onSelectLibrary: {
+                    showingPhotoLibrary = true
+                }
+            )
+        }
+        .fullScreenCover(isPresented: $showingCamera) {
+            ImagePicker(image: $attachedImage, sourceType: .camera)
+                .ignoresSafeArea()
+        }
+        .sheet(isPresented: $showingPhotoLibrary) {
+            ImagePicker(image: $attachedImage, sourceType: .photoLibrary)
         }
     }
     
@@ -82,7 +105,7 @@ struct RecordPaymentView: View {
                 .multilineTextAlignment(.center)
                 .focused($isAmountFocused)
             
-            Text(String(localized: "\(salesman.name) currently owes \(CurrencyFormatter.string(salesman.balance)) EGP"))
+            Text(String(localized: "\(salesman.name) currently owes \(CurrencyFormatter.string(salesman.balance)) \(CurrencyFormatter.symbol)"))
                 .font(.caption)
                 .foregroundStyle(Color.Theme.ink3)
         }
@@ -114,7 +137,7 @@ struct RecordPaymentView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(isOverpayment ? Color.Theme.warning : Color.Theme.ink)
                 
-                Text(String(localized: "EGP"))
+                Text(CurrencyFormatter.symbol)
                     .font(.caption)
                     .foregroundStyle(Color.Theme.ink3)
             }
@@ -123,7 +146,7 @@ struct RecordPaymentView: View {
                 HStack(spacing: Spacing.xs) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.caption)
-                    Text(String(localized: "Includes overpayment of \(CurrencyFormatter.string(overpaymentAmount)) EGP"))
+                    Text(String(localized: "Includes overpayment of \(CurrencyFormatter.string(overpaymentAmount)) \(CurrencyFormatter.symbol)"))
                         .font(.caption)
                 }
                 .foregroundStyle(Color.Theme.warning)
@@ -156,6 +179,20 @@ struct RecordPaymentView: View {
         }
     }
     
+    // MARK: - Attachment Section
+    
+    private var attachmentSection: some View {
+        AttachmentButton(
+            attachedImage: attachedImage,
+            onTap: {
+                showingAttachmentSheet = true
+            },
+            onRemove: {
+                attachedImage = nil
+            }
+        )
+    }
+    
     // MARK: - Confirm Button
     
     private var confirmButton: some View {
@@ -183,11 +220,19 @@ struct RecordPaymentView: View {
     // MARK: - Actions
     
     private func confirmPayment() {
+        // Save attachment if present
+        var attachmentFileName: String? = nil
+        if let image = attachedImage {
+            let transactionId = UUID()
+            attachmentFileName = ImageAttachmentService.saveImage(image, for: transactionId)
+        }
+        
         do {
             try LedgerService.recordPayment(
                 from: salesman,
                 amount: amount,
                 note: note.isEmpty ? nil : note,
+                attachmentFileName: attachmentFileName,
                 in: modelContext
             )
             triggerSuccessHaptic()

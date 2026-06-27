@@ -38,7 +38,7 @@ struct SalesmanRow: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Theme.ink)
                     
-                    Text(String(localized: "EGP"))
+                    Text(CurrencyFormatter.symbol)
                         .font(.caption)
                         .foregroundStyle(Color.Theme.ink3)
                 }

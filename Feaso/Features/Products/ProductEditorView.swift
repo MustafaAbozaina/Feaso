@@ -50,7 +50,7 @@ struct ProductEditorView: View {
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
-                    Text(String(localized: "EGP"))
+                    Text(CurrencyFormatter.symbol)
                         .foregroundStyle(Color.Theme.ink3)
                 }
                 
@@ -61,7 +61,7 @@ struct ProductEditorView: View {
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
-                    Text(String(localized: "EGP"))
+                    Text(CurrencyFormatter.symbol)
                         .foregroundStyle(Color.Theme.ink3)
                 }
             } header: {

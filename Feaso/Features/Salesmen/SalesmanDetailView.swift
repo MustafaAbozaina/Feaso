@@ -3,11 +3,9 @@ import SwiftData
 
 struct SalesmanDetailView: View {
     @Bindable var salesman: Salesman
-    @Environment(\.modelContext) private var modelContext
     
     @State private var showingEditSheet = false
     @State private var selectedTransaction: Transaction?
-    @State private var showingReversalAlert = false
     @State private var navigateToGiveProducts = false
     @State private var navigateToRecordPayment = false
     
@@ -45,37 +43,6 @@ struct SalesmanDetailView: View {
                 }
             }
         }
-        .confirmationDialog(
-            String(localized: "Transaction Options"),
-            isPresented: Binding(
-                get: { selectedTransaction != nil && !showingReversalAlert },
-                set: { if !$0 { selectedTransaction = nil } }
-            ),
-            presenting: selectedTransaction
-        ) { transaction in
-            if !transaction.isReversed && !transaction.isReversal {
-                Button(String(localized: "Reverse this transaction"), role: .destructive) {
-                    showingReversalAlert = true
-                }
-            }
-            Button(String(localized: "Cancel"), role: .cancel) {
-                selectedTransaction = nil
-            }
-        }
-        .alert(
-            String(localized: "Reverse Transaction?"),
-            isPresented: $showingReversalAlert,
-            presenting: selectedTransaction
-        ) { transaction in
-            Button(String(localized: "Reverse"), role: .destructive) {
-                reverseTransaction(transaction)
-            }
-            Button(String(localized: "Cancel"), role: .cancel) {
-                selectedTransaction = nil
-            }
-        } message: { _ in
-            Text(String(localized: "This creates a new entry that undoes it. The original is preserved for the record."))
-        }
         .sheet(isPresented: $showingEditSheet) {
             NavigationStack {
                 SalesmanEditorView(salesman: salesman)
@@ -86,6 +53,9 @@ struct SalesmanDetailView: View {
         }
         .navigationDestination(isPresented: $navigateToRecordPayment) {
             RecordPaymentView(salesman: salesman)
+        }
+        .navigationDestination(item: $selectedTransaction) { transaction in
+            TransactionDetailView(transaction: transaction)
         }
     }
     
@@ -170,17 +140,6 @@ struct SalesmanDetailView: View {
         }
     }
     
-    // MARK: - Actions
-    
-    private func reverseTransaction(_ transaction: Transaction) {
-        do {
-            try LedgerService.reverse(transaction, in: modelContext)
-        } catch {
-            // In production, show an alert
-            print("Failed to reverse transaction: \(error)")
-        }
-        selectedTransaction = nil
-    }
 }
 
 #Preview {

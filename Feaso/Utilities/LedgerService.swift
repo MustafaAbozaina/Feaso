@@ -13,6 +13,7 @@ enum LedgerService {
         to salesman: Salesman,
         items: [(product: Product, quantity: Int)],
         note: String? = nil,
+        attachmentFileName: String? = nil,
         occurredAt: Date = .now,
         in context: ModelContext
     ) throws {
@@ -25,7 +26,8 @@ enum LedgerService {
             amount: total,
             salesman: salesman,
             occurredAt: occurredAt,
-            note: note
+            note: note,
+            attachmentFileName: attachmentFileName
         )
         context.insert(transaction)
         
@@ -43,6 +45,7 @@ enum LedgerService {
         from salesman: Salesman,
         amount: Decimal,
         note: String? = nil,
+        attachmentFileName: String? = nil,
         occurredAt: Date = .now,
         in context: ModelContext
     ) throws {
@@ -51,7 +54,8 @@ enum LedgerService {
             amount: -amount,  // stored as negative to reduce balance
             salesman: salesman,
             occurredAt: occurredAt,
-            note: note
+            note: note,
+            attachmentFileName: attachmentFileName
         )
         context.insert(transaction)
         try context.save()

@@ -19,7 +19,7 @@ struct SummaryCard: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.Theme.accent)
                 
-                Text(String(localized: "EGP"))
+                Text(CurrencyFormatter.symbol)
                     .font(.callout)
                     .foregroundStyle(Color.Theme.ink3)
             }

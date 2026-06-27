@@ -44,12 +44,25 @@
 "Reversal" = "Reversal";
 "Cash" = "Cash";
 
-// MARK: - Transaction Options
-"Transaction Options" = "Transaction Options";
-"Reverse this transaction" = "Reverse this transaction";
-"Reverse Transaction?" = "Reverse Transaction?";
-"Reverse" = "Reverse";
-"This creates a new entry that undoes it. The original is preserved for the record." = "This creates a new entry that undoes it. The original is preserved for the record.";
+// MARK: - Transaction Detail
+"Payment" = "Payment";
+"Distribution" = "Distribution";
+"Return" = "Return";
+"Payment received from %@" = "Payment received from %@";
+"Products given to %@" = "Products given to %@";
+"Products returned by %@" = "Products returned by %@";
+"Reversal for %@" = "Reversal for %@";
+"Balance adjustment for %@" = "Balance adjustment for %@";
+"ITEMS" = "ITEMS";
+"DETAILS" = "DETAILS";
+"Date" = "Date";
+"Salesman" = "Salesman";
+"Type" = "Type";
+"Note" = "Note";
+"Reference" = "Reference";
+"each" = "each";
+"Unknown Product" = "Unknown Product";
+"This transaction has been reversed" = "This transaction has been reversed";
 
 // MARK: - Salesman Editor
 "New Salesman" = "New Salesman";
@@ -84,15 +97,15 @@
 // MARK: - Record Payment
 "Payment from %@" = "Payment from %@";
 "AMOUNT RECEIVED" = "AMOUNT RECEIVED";
-"%@ currently owes %@ EGP" = "%@ currently owes %@ EGP";
+"%@ currently owes %@ %@" = "%@ currently owes %@ %@";
 "AFTER THIS PAYMENT" = "AFTER THIS PAYMENT";
 "%@ will owe" = "%@ will owe";
-"Includes overpayment of %@ EGP" = "Includes overpayment of %@ EGP";
+"Includes overpayment of %@ %@" = "Includes overpayment of %@ %@";
 "NOTE (OPTIONAL)" = "NOTE (OPTIONAL)";
 "Cash, in person" = "Cash, in person";
 "Confirm Payment" = "Confirm Payment";
 "Overpayment" = "Overpayment";
-"This is more than %@ currently owes. Record an overpayment of %@ EGP?" = "This is more than %@ currently owes. Record an overpayment of %@ EGP?";
+"This is more than %@ currently owes. Record an overpayment of %@ %@?" = "This is more than %@ currently owes. Record an overpayment of %@ %@?";
 "Record Overpayment" = "Record Overpayment";
 
 // MARK: - Products List
@@ -120,3 +133,45 @@
 "Delete Product" = "Delete Product";
 "Delete Product?" = "Delete Product?";
 "Cannot delete a product that has been distributed." = "Cannot delete a product that has been distributed.";
+
+// MARK: - Settings
+"Settings" = "Settings";
+"Language" = "Language";
+"Currency" = "Currency";
+"Gulf Currencies" = "Gulf Currencies";
+"System Default" = "System Default";
+"English" = "English";
+"العربية" = "Arabic";
+"Restart Required" = "Restart Required";
+"Please restart the app for the language change to take effect." = "Please restart the app for the language change to take effect.";
+"Restart the app for language changes to take effect." = "Restart the app for language changes to take effect.";
+"OK" = "OK";
+
+// MARK: - Currencies
+"Egyptian Pound (EGP)" = "Egyptian Pound (EGP)";
+"US Dollar (USD)" = "US Dollar (USD)";
+"Saudi Riyal (SAR)" = "Saudi Riyal (SAR)";
+"UAE Dirham (AED)" = "UAE Dirham (AED)";
+"Kuwaiti Dinar (KWD)" = "Kuwaiti Dinar (KWD)";
+"Bahraini Dinar (BHD)" = "Bahraini Dinar (BHD)";
+"Omani Rial (OMR)" = "Omani Rial (OMR)";
+"Qatari Riyal (QAR)" = "Qatari Riyal (QAR)";
+"USD" = "$";
+"SAR" = "SR";
+"AED" = "AED";
+"KWD" = "KD";
+"BHD" = "BD";
+"OMR" = "OMR";
+"QAR" = "QR";
+// MARK: - Attachments
+"ATTACHMENT (OPTIONAL)" = "ATTACHMENT (OPTIONAL)";
+"ATTACHMENT" = "ATTACHMENT";
+"Add Receipt or Photo" = "Add Receipt or Photo";
+"Add Attachment" = "Add Attachment";
+"Take Photo" = "Take Photo";
+"Capture receipt or document" = "Capture receipt or document";
+"Choose from Library" = "Choose from Library";
+"Select existing photo" = "Select existing photo";
+"Tap to view" = "Tap to view";
+"Remove" = "Remove";
+
