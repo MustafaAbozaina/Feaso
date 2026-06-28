@@ -1,0 +1,116 @@
+# === macOS ===
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# === Xcode ===
+# Build artifacts
+build/
+DerivedData/
+
+# User settings
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+
+# Other Xcode
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+*.xcuserstate
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods (if used)
+Pods/
+
+# Carthage (if used)
+Carthage/Build/
+
+# Fastlane (if used)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# === App assets generated or large ===
+# Local ML models and compiled models
+VideoTranscriber/*.mlmodelc/
+VideoTranscriber/**/*.mlmodelc/
+VideoTranscriber/ggml-*.bin
+
+# ML model packages (CoreML models - can be large)
+*.mlpackage/
+*.mlmodel
+*.mlmodelc
+**/*.mlpackage/
+**/*.mlmodel
+**/*.mlmodelc
+
+# Specific large ML models
+T5QAGenerator.mlpackage/
+T5QAGenerator.mlmodel
+FLAN-T5.mlpackage/
+FLAN-T5.mlmodel
+KimiK2.mlpackage/
+KimiK2.mlmodel
+DistilGPT2.mlpackage/
+DistilGPT2.mlmodel
+
+# ML model vocabulary files (can be large)
+*.spiece.model
+spiece.model
+vocab.json
+tokenizer.json
+*.vocab
+
+# Python ML model files
+*.pt
+*.pth
+*.onnx
+*.pb
+*.h5
+*.keras
+
+# Local large dictionaries or datasets
+VideoTranscriber/en-dictionary.json
+
+# Python virtual environments (for ML model conversion)
+t5-env/
+venv/
+env/
+.venv/
+*.egg-info/
+
+# Media caches / temp
+*.log
+*.tmp
+*.swp
+*.swo
+
+# === Xcode project workspace cruft ===
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+
+# === Archives ===
+*.xcarchive
+
+# === Simulator / device data (never commit) ===
+# (Usually outside repo, but safe guards)
+*/CoreSimulator/Devices/
+
+# === API Keys and Secrets ===
+# Never commit actual secrets - use Secrets.plist.template as reference
+Secrets.plist
+**/Secrets.plist

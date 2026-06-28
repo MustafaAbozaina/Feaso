@@ -5,6 +5,7 @@ struct TransactionDetailView: View {
     
     @Environment(\.dismiss) private var dismiss
     @State private var showingFullScreenImage = false
+    @State private var showingReceiptPreview = false
     
     private var title: String {
         if transaction.isReversal {
@@ -84,6 +85,18 @@ struct TransactionDetailView: View {
         .background(Color.Theme.background)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showingReceiptPreview = true
+                } label: {
+                    Image(systemName: "doc.text")
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showingReceiptPreview) {
+            TransactionReceiptPreviewView(transaction: transaction)
+        }
         .fullScreenCover(isPresented: $showingFullScreenImage) {
             if let fileName = transaction.attachmentFileName,
                let image = ImageAttachmentService.loadImage(fileName: fileName) {
@@ -428,6 +441,132 @@ private struct FullScreenImageView: View {
             .toolbarBackground(.visible, for: .navigationBar)
         }
     }
+}
+
+// MARK: - Transaction Receipt Preview View
+
+import PDFKit
+
+private struct TransactionReceiptPreviewView: View {
+    let transaction: Transaction
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var pdfData: Data?
+    @State private var isGenerating = true
+    @State private var showingShareSheet = false
+    
+    private var receiptTitle: String {
+        if transaction.isReversal {
+            return String(localized: "Reversal Receipt")
+        }
+        switch transaction.type {
+        case .payment:
+            return String(localized: "Payment Receipt")
+        case .distribution:
+            return String(localized: "Distribution Receipt")
+        case .return:
+            return String(localized: "Return Receipt")
+        case .adjustment:
+            return String(localized: "Adjustment Receipt")
+        }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.Theme.background
+                    .ignoresSafeArea()
+                
+                if isGenerating {
+                    ProgressView(String(localized: "Generating receipt..."))
+                        .foregroundStyle(Color.Theme.ink2)
+                } else if let data = pdfData {
+                    ReceiptPDFPreviewView(data: data)
+                } else {
+                    VStack(spacing: Spacing.md) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundStyle(Color.Theme.warning)
+                        Text(String(localized: "Failed to generate receipt"))
+                            .font(.body)
+                            .foregroundStyle(Color.Theme.ink2)
+                    }
+                }
+            }
+            .navigationTitle(receiptTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Close")) {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingShareSheet = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .disabled(pdfData == nil || isGenerating)
+                }
+            }
+            .task {
+                await generatePDF()
+            }
+            .sheet(isPresented: $showingShareSheet) {
+                if let data = pdfData {
+                    ReceiptShareSheet(items: [data])
+                }
+            }
+        }
+    }
+    
+    @MainActor
+    private func generatePDF() async {
+        // Small delay for smooth animation
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        
+        pdfData = StatementGenerator.generateTransactionPDF(for: transaction)
+        isGenerating = false
+    }
+}
+
+// MARK: - Receipt PDF Preview
+
+private struct ReceiptPDFPreviewView: UIViewRepresentable {
+    let data: Data
+    
+    func makeUIView(context: Context) -> PDFView {
+        let pdfView = PDFView()
+        pdfView.autoScales = true
+        pdfView.displayMode = .singlePageContinuous
+        pdfView.displayDirection = .vertical
+        pdfView.backgroundColor = UIColor.systemGray6
+        return pdfView
+    }
+    
+    func updateUIView(_ pdfView: PDFView, context: Context) {
+        if let document = PDFDocument(data: data) {
+            pdfView.document = document
+        }
+    }
+}
+
+// MARK: - Receipt Share Sheet
+
+private struct ReceiptShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: items,
+            applicationActivities: nil
+        )
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview("Distribution") {

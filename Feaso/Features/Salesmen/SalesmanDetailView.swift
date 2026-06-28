@@ -5,6 +5,7 @@ struct SalesmanDetailView: View {
     @Bindable var salesman: Salesman
     
     @State private var showingEditSheet = false
+    @State private var showingStatementSheet = false
     @State private var selectedTransaction: Transaction?
     @State private var navigateToGiveProducts = false
     @State private var navigateToRecordPayment = false
@@ -38,8 +39,17 @@ struct SalesmanDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(String(localized: "Edit")) {
-                    showingEditSheet = true
+                HStack(spacing: Spacing.sm) {
+                    Button {
+                        showingStatementSheet = true
+                    } label: {
+                        Image(systemName: "doc.text")
+                    }
+                    .disabled(!hasActivity)
+                    
+                    Button(String(localized: "Edit")) {
+                        showingEditSheet = true
+                    }
                 }
             }
         }
@@ -47,6 +57,9 @@ struct SalesmanDetailView: View {
             NavigationStack {
                 SalesmanEditorView(salesman: salesman)
             }
+        }
+        .sheet(isPresented: $showingStatementSheet) {
+            StatementPreviewView(salesman: salesman)
         }
         .navigationDestination(isPresented: $navigateToGiveProducts) {
             GiveProductsView(salesman: salesman)
@@ -78,11 +91,14 @@ struct SalesmanDetailView: View {
                 Button {
                     navigateToGiveProducts = true
                 } label: {
-                    Label {
-                        Text("Gave products")
-                    } icon: {
+                    HStack(spacing: 8) {
+                        Spacer()
                         Image(systemName: "arrow.right.circle.fill")
                             .foregroundStyle(.white)
+                        Text("Gave products")
+                            .font(.subheadline)
+                            .minimumScaleFactor(0.75)
+                        Spacer()
                     }
                     .frame(maxWidth: .infinity)
                     .font(.subheadline)
@@ -95,10 +111,18 @@ struct SalesmanDetailView: View {
                 Button {
                     navigateToRecordPayment = true
                 } label: {
-                    Label(String(localized: "Record payment"), systemImage: "checkmark.circle")
-                        .frame(maxWidth: .infinity)
-                        .font(.subheadline)
-                        .frame(height: 40)
+                    HStack(spacing: 8) {
+                        Spacer()
+                        Image(systemName: "checkmark.circle")
+                            .foregroundStyle(.white)
+                        Text("Record payment")
+                            .font(.subheadline)
+                            .minimumScaleFactor(0.75)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .font(.subheadline)
+                    .frame(height: 40)
                 }
                 .buttonStyle(.bordered)
                 .tint(Color.Theme.success)
