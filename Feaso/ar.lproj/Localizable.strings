@@ -207,3 +207,18 @@
 "Items" = "العناصر";
 "Ref" = "المرجع";
 
+// MARK: - Return Products
+"Return from %@" = "إرجاع من %@";
+"Record return" = "تسجيل إرجاع";
+"Add product to return" = "إضافة منتج للإرجاع";
+"Confirm Return" = "تأكيد الإرجاع";
+"Discard Return?" = "تجاهل الإرجاع؟";
+"Return will not be recorded." = "لن يتم تسجيل الإرجاع.";
+"Current %@ − return %@" = "الحالي %@ − الإرجاع %@";
+"per unit" = "للوحدة";
+"No products to return" = "لا توجد منتجات للإرجاع";
+"This salesman hasn't received any products yet, or all products have already been returned." = "هذا المندوب لم يستلم أي منتجات بعد، أو تم إرجاع جميع المنتجات بالفعل.";
+"%lld available to return" = "%lld متاح للإرجاع";
+"%lld available" = "%lld متاح";
+"Select product to return" = "اختر منتج للإرجاع";
+

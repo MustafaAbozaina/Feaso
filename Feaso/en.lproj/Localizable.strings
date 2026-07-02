@@ -208,3 +208,18 @@
 "Items" = "Items";
 "Ref" = "Ref";
 
+// MARK: - Return Products
+"Return from %@" = "Return from %@";
+"Record return" = "Record return";
+"Add product to return" = "Add product to return";
+"Confirm Return" = "Confirm Return";
+"Discard Return?" = "Discard Return?";
+"Return will not be recorded." = "Return will not be recorded.";
+"Current %@ − return %@" = "Current %@ − return %@";
+"per unit" = "per unit";
+"No products to return" = "No products to return";
+"This salesman hasn't received any products yet, or all products have already been returned." = "This salesman hasn't received any products yet, or all products have already been returned.";
+"%lld available to return" = "%lld available to return";
+"%lld available" = "%lld available";
+"Select product to return" = "Select product to return";
+

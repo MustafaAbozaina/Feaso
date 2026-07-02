@@ -9,6 +9,7 @@ struct SalesmanDetailView: View {
     @State private var selectedTransaction: Transaction?
     @State private var navigateToGiveProducts = false
     @State private var navigateToRecordPayment = false
+    @State private var navigateToReturnProducts = false
     
     private var sortedTransactions: [Transaction] {
         salesman.transactions.sorted { $0.occurredAt > $1.occurredAt }
@@ -67,6 +68,9 @@ struct SalesmanDetailView: View {
         .navigationDestination(isPresented: $navigateToRecordPayment) {
             RecordPaymentView(salesman: salesman)
         }
+        .navigationDestination(isPresented: $navigateToReturnProducts) {
+            ReturnProductsView(salesman: salesman)
+        }
         .navigationDestination(item: $selectedTransaction) { transaction in
             TransactionDetailView(transaction: transaction)
         }
@@ -87,35 +91,55 @@ struct SalesmanDetailView: View {
     
     private var actionButtonsSection: some View {
         Section {
-            HStack(spacing: Spacing.md) {
-                Button {
-                    navigateToGiveProducts = true
-                } label: {
-                    HStack(spacing: 8) {
-                        Spacer()
-                        Image(systemName: "arrow.right.circle.fill")
-                            .foregroundStyle(.white)
-                        Text("Gave products")
-                            .font(.subheadline)
-                            .minimumScaleFactor(0.75)
-                        Spacer()
+            VStack(spacing: Spacing.sm) {
+                // Primary actions row
+                HStack(spacing: Spacing.md) {
+                    Button {
+                        navigateToGiveProducts = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Spacer()
+                            Image(systemName: "arrow.right.circle.fill")
+                                .foregroundStyle(.white)
+                            Text(String(localized: "Gave products"))
+                                .font(.subheadline)
+                                .minimumScaleFactor(0.75)
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .font(.subheadline)
+                        .frame(height: 40)
                     }
-                    .frame(maxWidth: .infinity)
-                    .font(.subheadline)
-                    .frame(height: 40)
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.Theme.accent)
+                    
+                    Button {
+                        navigateToRecordPayment = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Spacer()
+                            Image(systemName: "checkmark.circle")
+                            Text(String(localized: "Record payment"))
+                                .font(.subheadline)
+                                .minimumScaleFactor(0.75)
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .font(.subheadline)
+                        .frame(height: 40)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.Theme.success)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Color.Theme.accent)
                 
-                
+                // Secondary action: Return
                 Button {
-                    navigateToRecordPayment = true
+                    navigateToReturnProducts = true
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Spacer()
-                        Image(systemName: "checkmark.circle")
-                            .foregroundStyle(.white)
-                        Text("Record payment")
+                        Image(systemName: "arrow.uturn.backward.circle")
+                        Text(String(localized: "Record return"))
                             .font(.subheadline)
                             .minimumScaleFactor(0.75)
                         Spacer()
@@ -125,7 +149,7 @@ struct SalesmanDetailView: View {
                     .frame(height: 40)
                 }
                 .buttonStyle(.bordered)
-                .tint(Color.Theme.success)
+                .tint(Color.Theme.ink2)
             }
             .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)

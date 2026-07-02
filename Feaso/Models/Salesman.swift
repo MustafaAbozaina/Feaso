@@ -34,4 +34,43 @@ final class Salesman {
     var lastActivityAt: Date? {
         transactions.map(\.occurredAt).max()
     }
+    
+    /// Calculates how many units of each product the salesman can still return.
+    /// Formula: distributed quantity - already returned quantity (excluding reversed transactions)
+    var returnableProducts: [Product: Int] {
+        let activeTransactions = transactions.filter { $0.reversedBy == nil }
+        
+        var productQuantities: [UUID: (product: Product, quantity: Int)] = [:]
+        
+        for transaction in activeTransactions {
+            for item in transaction.items {
+                guard let product = item.product else { continue }
+                
+                let currentQuantity = productQuantities[product.id]?.quantity ?? 0
+                
+                switch transaction.type {
+                case .distribution:
+                    // Add to returnable quantity
+                    productQuantities[product.id] = (product, currentQuantity + item.quantity)
+                case .return:
+                    // Subtract from returnable quantity
+                    productQuantities[product.id] = (product, currentQuantity - item.quantity)
+                default:
+                    break
+                }
+            }
+        }
+        
+        // Return only products with positive returnable quantity
+        var result: [Product: Int] = [:]
+        for (_, value) in productQuantities where value.quantity > 0 {
+            result[value.product] = value.quantity
+        }
+        return result
+    }
+    
+    /// Returns true if the salesman has any products that can be returned
+    var hasReturnableProducts: Bool {
+        !returnableProducts.isEmpty
+    }
 }

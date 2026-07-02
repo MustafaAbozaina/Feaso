@@ -62,6 +62,41 @@ enum LedgerService {
     }
     
     @MainActor
+    static func recordReturn(
+        from salesman: Salesman,
+        items: [(product: Product, quantity: Int)],
+        note: String? = nil,
+        attachmentFileName: String? = nil,
+        occurredAt: Date = .now,
+        in context: ModelContext
+    ) throws {
+        // Calculate total at selling price (reduces debt)
+        let total = items.reduce(Decimal(0)) { sum, item in
+            sum + (Decimal(item.quantity) * item.product.sellingPrice)
+        }
+        
+        // Amount is negative because it reduces what salesman owes
+        let transaction = Transaction(
+            type: .return,
+            amount: -total,
+            salesman: salesman,
+            occurredAt: occurredAt,
+            note: note,
+            attachmentFileName: attachmentFileName
+        )
+        context.insert(transaction)
+        
+        // Create transaction items (for stock tracking and audit trail)
+        for (product, quantity) in items {
+            let item = TransactionItem(product: product, quantity: quantity)
+            item.transaction = transaction
+            context.insert(item)
+        }
+        
+        try context.save()
+    }
+    
+    @MainActor
     static func reverse(
         _ original: Transaction,
         in context: ModelContext
