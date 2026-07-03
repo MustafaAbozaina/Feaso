@@ -20,17 +20,23 @@ struct ReturnLineDraft: Identifiable {
     let product: Product
     var quantity: Int
     let maxQuantity: Int
-    
-    init(product: Product, quantity: Int, maxQuantity: Int) {
+    /// Outstanding distributed units at their historical prices, captured when
+    /// the line is added, so the preview matches what the ledger will record.
+    let lots: [PriceLot]
+
+    init(product: Product, quantity: Int, maxQuantity: Int, lots: [PriceLot]) {
         self.id = UUID()
         self.product = product
         self.quantity = quantity
         self.maxQuantity = maxQuantity
+        self.lots = lots
     }
-    
+
     var productName: String { product.name }
-    var productSellingPrice: Decimal { product.sellingPrice }
-    var lineTotal: Decimal { Decimal(quantity) * product.sellingPrice }
+    var lineTotal: Decimal { LedgerService.value(of: quantity, from: lots) }
+    var unitPriceDisplay: Decimal {
+        quantity > 0 ? lineTotal / Decimal(quantity) : product.sellingPrice
+    }
     var canIncrement: Bool { quantity < maxQuantity }
 }
 
@@ -103,7 +109,11 @@ struct ReturnProductsView: View {
                         lines.append(ReturnLineDraft(
                             product: returnableProduct.product,
                             quantity: 1,
-                            maxQuantity: returnableProduct.maxQuantity
+                            maxQuantity: returnableProduct.maxQuantity,
+                            lots: LedgerService.outstandingLots(
+                                for: salesman,
+                                product: returnableProduct.product
+                            )
                         ))
                     }
                 )
@@ -384,7 +394,7 @@ private struct ReturnItemCard: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: Spacing.xs) {
-                        Text(CurrencyFormatter.string(line.productSellingPrice))
+                        Text(CurrencyFormatter.string(line.unitPriceDisplay))
                         Text(CurrencyFormatter.symbol)
                         Text(String(localized: "per unit"))
                     }

@@ -22,10 +22,9 @@ final class Salesman {
     }
     
     /// Computed balance. Positive = salesman owes the business.
+    /// Sums the full journal: a reversed transaction and its reversal cancel out.
     var balance: Decimal {
-        transactions
-            .filter { $0.reversedBy == nil }
-            .reduce(Decimal(0)) { $0 + $1.amount }
+        transactions.reduce(Decimal(0)) { $0 + $1.amount }
     }
     
     var isSettled: Bool { balance == 0 }

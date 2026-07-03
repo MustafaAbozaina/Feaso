@@ -452,8 +452,9 @@ enum StatementGenerator {
         
         """
         
+        // Full journal: reversed transactions appear alongside their reversal
+        // so the listed amounts reconcile with the balance.
         let recentTransactions = salesman.transactions
-            .filter { $0.reversedBy == nil }
             .sorted { $0.occurredAt > $1.occurredAt }
             .prefix(5)
         
@@ -479,8 +480,9 @@ enum StatementGenerator {
     // MARK: - Private Helpers
     
     private static func filteredTransactions(for salesman: Salesman, dateRange: ClosedRange<Date>?) -> [Transaction] {
+        // Full journal: reversed transactions appear alongside their reversal
+        // so the statement rows reconcile with the balance.
         var transactions = salesman.transactions
-            .filter { $0.reversedBy == nil }
             .sorted { $0.occurredAt > $1.occurredAt }
         
         if let range = dateRange {
