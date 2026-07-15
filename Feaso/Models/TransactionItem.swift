@@ -10,11 +10,20 @@ final class TransactionItem {
     var transaction: Transaction?
     var product: Product?
     
+    /// Initialize with explicit unit price override (used for returns with historical pricing)
     init(product: Product, quantity: Int, unitPriceOverride: Decimal? = nil) {
         self.id = UUID()
         self.product = product
         self.quantity = quantity
-        self.unitPrice = unitPriceOverride ?? product.sellingPrice
+        self.unitPrice = unitPriceOverride ?? product.cashPrice
+    }
+    
+    /// Initialize with payment type to determine price (used for distributions)
+    init(product: Product, quantity: Int, paymentType: PaymentType) {
+        self.id = UUID()
+        self.product = product
+        self.quantity = quantity
+        self.unitPrice = paymentType == .cash ? product.cashPrice : product.installmentPrice
     }
     
     var lineTotal: Decimal {

@@ -43,6 +43,8 @@
 "Adjustment" = "Adjustment";
 "Reversal" = "Reversal";
 "Cash" = "Cash";
+"Installment" = "Installment";
+"Payment Type" = "Payment Type";
 
 // MARK: - Transaction Detail
 "Payment" = "Payment";
@@ -124,7 +126,8 @@
 "Edit Product" = "Edit Product";
 "Pricing" = "Pricing";
 "Cost Price" = "Cost Price";
-"Selling Price" = "Selling Price";
+"Cash Price" = "Cash Price";
+"Installment Price" = "Installment Price";
 "Inventory" = "Inventory";
 "Opening Stock" = "Opening Stock";
 "Reorder Threshold" = "Reorder Threshold";

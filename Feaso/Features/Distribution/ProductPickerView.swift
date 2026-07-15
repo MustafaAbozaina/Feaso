@@ -69,7 +69,7 @@ private struct ProductPickerRow: View {
                     .foregroundStyle(Color.Theme.ink)
                 
                 HStack(spacing: Spacing.xs) {
-                    Text(CurrencyFormatter.string(product.sellingPrice))
+                    Text(CurrencyFormatter.string(product.cashPrice))
                     Text(CurrencyFormatter.symbol)
                     Text("·")
                     Text(String(localized: "\(product.currentStock) in stock"))

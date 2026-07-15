@@ -19,13 +19,14 @@ enum LedgerService {
     static func recordDistribution(
         to salesman: Salesman,
         items: [(product: Product, quantity: Int)],
+        paymentType: PaymentType = .cash,
         note: String? = nil,
         attachmentFileName: String? = nil,
         occurredAt: Date = .now,
         in context: ModelContext
     ) throws {
         let transactionItems = items.map { item in
-            TransactionItem(product: item.product, quantity: item.quantity)
+            TransactionItem(product: item.product, quantity: item.quantity, paymentType: paymentType)
         }
         let total = transactionItems.reduce(Decimal(0)) { $0 + $1.lineTotal }
 
@@ -35,7 +36,8 @@ enum LedgerService {
             salesman: salesman,
             occurredAt: occurredAt,
             note: note,
-            attachmentFileName: attachmentFileName
+            attachmentFileName: attachmentFileName,
+            paymentType: paymentType
         )
         context.insert(transaction)
 

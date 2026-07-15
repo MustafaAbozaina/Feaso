@@ -6,7 +6,8 @@ final class Product {
     var id: UUID
     var name: String
     var costPrice: Decimal
-    var sellingPrice: Decimal
+    var cashPrice: Decimal
+    var installmentPrice: Decimal
     var openingStock: Int
     var reorderThreshold: Int?
     var createdAt: Date
@@ -18,14 +19,16 @@ final class Product {
     init(
         name: String,
         costPrice: Decimal,
-        sellingPrice: Decimal,
+        cashPrice: Decimal,
+        installmentPrice: Decimal? = nil,
         openingStock: Int = 0,
         reorderThreshold: Int? = nil
     ) {
         self.id = UUID()
         self.name = name
         self.costPrice = costPrice
-        self.sellingPrice = sellingPrice
+        self.cashPrice = cashPrice
+        self.installmentPrice = installmentPrice ?? cashPrice  // Default to cash price if not provided
         self.openingStock = openingStock
         self.reorderThreshold = reorderThreshold
         self.createdAt = .now

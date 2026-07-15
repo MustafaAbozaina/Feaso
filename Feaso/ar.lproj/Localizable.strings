@@ -42,7 +42,9 @@
 "Products returned" = "تم إرجاع منتجات";
 "Adjustment" = "تعديل";
 "Reversal" = "إلغاء";
-"Cash" = "نقداً";
+"Cash" = "كاش";
+"Installment" = "تقسيط";
+"Payment Type" = "طريقة الدفع";
 
 // MARK: - Transaction Detail
 "Payment" = "دفعة";
@@ -123,7 +125,8 @@
 "Edit Product" = "تعديل المنتج";
 "Pricing" = "التسعير";
 "Cost Price" = "سعر التكلفة";
-"Selling Price" = "سعر البيع";
+"Cash Price" = "سعر الكاش";
+"Installment Price" = "سعر التقسيط";
 "Inventory" = "المخزون";
 "Opening Stock" = "المخزون الافتتاحي";
 "Reorder Threshold" = "حد إعادة الطلب";

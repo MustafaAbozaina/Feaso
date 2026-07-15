@@ -35,7 +35,7 @@ struct ReturnLineDraft: Identifiable {
     var productName: String { product.name }
     var lineTotal: Decimal { LedgerService.value(of: quantity, from: lots) }
     var unitPriceDisplay: Decimal {
-        quantity > 0 ? lineTotal / Decimal(quantity) : product.sellingPrice
+        quantity > 0 ? lineTotal / Decimal(quantity) : product.cashPrice
     }
     var canIncrement: Bool { quantity < maxQuantity }
 }
@@ -502,7 +502,7 @@ private struct ReturnableProductPickerView: View {
                                 .foregroundStyle(Color.Theme.ink)
                             
                             HStack(spacing: Spacing.xs) {
-                                Text(CurrencyFormatter.string(item.product.sellingPrice))
+                                Text(CurrencyFormatter.string(item.product.cashPrice))
                                 Text(CurrencyFormatter.symbol)
                             }
                             .font(.caption)

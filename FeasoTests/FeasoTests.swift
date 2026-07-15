@@ -23,10 +23,10 @@ struct LedgerTests {
 
     private func makeSalesmanAndProduct(
         in context: ModelContext,
-        sellingPrice: Decimal = 50
+        cashPrice: Decimal = 50
     ) -> (Salesman, Product) {
         let salesman = Salesman(name: "Ahmed")
-        let product = Product(name: "Water", costPrice: 40, sellingPrice: sellingPrice, openingStock: 100)
+        let product = Product(name: "Water", costPrice: 40, cashPrice: cashPrice, openingStock: 100)
         context.insert(salesman)
         context.insert(product)
         return (salesman, product)
@@ -71,10 +71,10 @@ struct LedgerTests {
     @Test func returnAfterPriceIncreaseUsesDistributionPrice() throws {
         let container = try makeContainer()
         let context = container.mainContext
-        let (salesman, product) = makeSalesmanAndProduct(in: context, sellingPrice: 50)
+        let (salesman, product) = makeSalesmanAndProduct(in: context, cashPrice: 50)
 
         try LedgerService.recordDistribution(to: salesman, items: [(product, 10)], in: context)
-        product.sellingPrice = 60
+        product.cashPrice = 60
         try LedgerService.recordReturn(from: salesman, items: [(product, 5)], in: context)
 
         // Credited 5 × 50 (distribution price), not 5 × 60 (current price)
@@ -84,12 +84,12 @@ struct LedgerTests {
     @Test func returnConsumesPriceLotsFIFO() throws {
         let container = try makeContainer()
         let context = container.mainContext
-        let (salesman, product) = makeSalesmanAndProduct(in: context, sellingPrice: 50)
+        let (salesman, product) = makeSalesmanAndProduct(in: context, cashPrice: 50)
         let t1 = Date(timeIntervalSince1970: 1_000)
         let t2 = Date(timeIntervalSince1970: 2_000)
 
         try LedgerService.recordDistribution(to: salesman, items: [(product, 10)], occurredAt: t1, in: context)
-        product.sellingPrice = 60
+        product.cashPrice = 60
         try LedgerService.recordDistribution(to: salesman, items: [(product, 10)], occurredAt: t2, in: context)
         try LedgerService.recordReturn(from: salesman, items: [(product, 15)], in: context)
 
@@ -100,7 +100,7 @@ struct LedgerTests {
     @Test func partialReturnsKeepConsumingLotsInOrder() throws {
         let container = try makeContainer()
         let context = container.mainContext
-        let (salesman, product) = makeSalesmanAndProduct(in: context, sellingPrice: 50)
+        let (salesman, product) = makeSalesmanAndProduct(in: context, cashPrice: 50)
         let t1 = Date(timeIntervalSince1970: 1_000)
 
         try LedgerService.recordDistribution(to: salesman, items: [(product, 10)], occurredAt: t1, in: context)
@@ -188,7 +188,7 @@ struct LedgerTests {
     @Test func mixedHistoryBalancesCorrectly() throws {
         let container = try makeContainer()
         let context = container.mainContext
-        let (salesman, product) = makeSalesmanAndProduct(in: context, sellingPrice: 50)
+        let (salesman, product) = makeSalesmanAndProduct(in: context, cashPrice: 50)
 
         try LedgerService.recordDistribution(to: salesman, items: [(product, 20)], occurredAt: Date(timeIntervalSince1970: 1_000), in: context)  // +1000
         try LedgerService.recordPayment(from: salesman, amount: 400, in: context)                                                                 // −400

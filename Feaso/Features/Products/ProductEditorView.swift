@@ -9,7 +9,8 @@ struct ProductEditorView: View {
     
     @State private var name: String = ""
     @State private var costPriceText: String = ""
-    @State private var sellingPriceText: String = ""
+    @State private var cashPriceText: String = ""
+    @State private var installmentPriceText: String = ""
     @State private var openingStockText: String = ""
     @State private var reorderThresholdText: String = ""
     @State private var showingDeleteAlert = false
@@ -22,7 +23,10 @@ struct ProductEditorView: View {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty else { return false }
         guard Decimal(string: costPriceText) != nil else { return false }
-        guard Decimal(string: sellingPriceText) != nil else { return false }
+        // At least one selling price must be provided
+        let hasCashPrice = Decimal(string: cashPriceText) != nil && !cashPriceText.isEmpty
+        let hasInstallmentPrice = Decimal(string: installmentPriceText) != nil && !installmentPriceText.isEmpty
+        guard hasCashPrice || hasInstallmentPrice else { return false }
         guard Int(openingStockText) != nil || openingStockText.isEmpty else { return false }
         return true
     }
@@ -55,9 +59,20 @@ struct ProductEditorView: View {
                 }
                 
                 HStack {
-                    Text(String(localized: "Selling Price"))
+                    Text(String(localized: "Cash Price"))
                     Spacer()
-                    TextField("0", text: $sellingPriceText)
+                    TextField("0", text: $cashPriceText)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 100)
+                    Text(CurrencyFormatter.symbol)
+                        .foregroundStyle(Color.Theme.ink3)
+                }
+                
+                HStack {
+                    Text(String(localized: "Installment Price"))
+                    Spacer()
+                    TextField("0", text: $installmentPriceText)
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
@@ -134,7 +149,8 @@ struct ProductEditorView: View {
             if let product {
                 name = product.name
                 costPriceText = "\(product.costPrice)"
-                sellingPriceText = "\(product.sellingPrice)"
+                cashPriceText = "\(product.cashPrice)"
+                installmentPriceText = "\(product.installmentPrice)"
                 openingStockText = "\(product.openingStock)"
                 if let threshold = product.reorderThreshold {
                     reorderThresholdText = "\(threshold)"
@@ -156,24 +172,44 @@ struct ProductEditorView: View {
     
     private func save() {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
-        guard let costPrice = Decimal(string: costPriceText),
-              let sellingPrice = Decimal(string: sellingPriceText) else {
-            return
+        guard let costPrice = Decimal(string: costPriceText) else { return }
+        
+        // Parse prices - if one is missing, copy from the other
+        let parsedCashPrice = Decimal(string: cashPriceText)
+        let parsedInstallmentPrice = Decimal(string: installmentPriceText)
+        
+        let cashPrice: Decimal
+        let installmentPrice: Decimal
+        
+        if let cash = parsedCashPrice, let installment = parsedInstallmentPrice {
+            cashPrice = cash
+            installmentPrice = installment
+        } else if let cash = parsedCashPrice {
+            cashPrice = cash
+            installmentPrice = cash  // Default installment to cash price
+        } else if let installment = parsedInstallmentPrice {
+            cashPrice = installment  // Default cash to installment price
+            installmentPrice = installment
+        } else {
+            return  // Neither provided (shouldn't happen due to canSave check)
         }
+        
         let openingStock = Int(openingStockText) ?? 0
         let reorderThreshold = Int(reorderThresholdText)
         
         if let product {
             product.name = trimmedName
             product.costPrice = costPrice
-            product.sellingPrice = sellingPrice
+            product.cashPrice = cashPrice
+            product.installmentPrice = installmentPrice
             product.openingStock = openingStock
             product.reorderThreshold = reorderThreshold
         } else {
             let newProduct = Product(
                 name: trimmedName,
                 costPrice: costPrice,
-                sellingPrice: sellingPrice,
+                cashPrice: cashPrice,
+                installmentPrice: installmentPrice,
                 openingStock: openingStock,
                 reorderThreshold: reorderThreshold
             )
@@ -204,7 +240,8 @@ struct ProductEditorView: View {
         ProductEditorView(product: Product(
             name: "TV",
             costPrice: 7000,
-            sellingPrice: 10000,
+            cashPrice: 10000,
+            installmentPrice: 12000,
             openingStock: 50,
             reorderThreshold: 5
         ))

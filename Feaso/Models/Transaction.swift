@@ -13,6 +13,9 @@ final class Transaction {
     /// Stores the file name of the attached image (stored in app's documents directory)
     var attachmentFileName: String?
     
+    /// Payment type for distributions (cash or installment). Nil for non-distribution transactions.
+    var paymentTypeRaw: String?
+    
     var salesman: Salesman?
     
     @Relationship(deleteRule: .cascade, inverse: \TransactionItem.transaction)
@@ -26,13 +29,19 @@ final class Transaction {
         set { typeRaw = newValue.rawValue }
     }
     
+    var paymentType: PaymentType? {
+        get { paymentTypeRaw.flatMap { PaymentType(rawValue: $0) } }
+        set { paymentTypeRaw = newValue?.rawValue }
+    }
+    
     init(
         type: TransactionType,
         amount: Decimal,
         salesman: Salesman? = nil,
         occurredAt: Date = .now,
         note: String? = nil,
-        attachmentFileName: String? = nil
+        attachmentFileName: String? = nil,
+        paymentType: PaymentType? = nil
     ) {
         self.id = UUID()
         self.typeRaw = type.rawValue
@@ -41,6 +50,7 @@ final class Transaction {
         self.occurredAt = occurredAt
         self.note = note
         self.attachmentFileName = attachmentFileName
+        self.paymentTypeRaw = paymentType?.rawValue
         self.createdAt = .now
     }
     

@@ -8,6 +8,7 @@ struct GiveProductsView: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var lines: [LineDraft] = []
+    @State private var paymentType: PaymentType = .cash
     @State private var showingPicker = false
     @State private var showingDiscardAlert = false
     @State private var showingStockWarning = false
@@ -63,7 +64,7 @@ struct GiveProductsView: View {
             NavigationStack {
                 ProductPickerView(
                     onSelect: { product in
-                        lines.append(LineDraft(product: product, quantity: 1))
+                        lines.append(LineDraft(product: product, quantity: 1, paymentType: paymentType))
                     },
                     excludedProductIDs: excludedProductIDs
                 )
@@ -115,6 +116,16 @@ struct GiveProductsView: View {
     
     private var cartList: some View {
         List {
+            paymentTypeSection
+                .listRowInsets(EdgeInsets(
+                    top: Spacing.sm,
+                    leading: Spacing.lg,
+                    bottom: Spacing.sm,
+                    trailing: Spacing.lg
+                ))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            
             ForEach(lines) { line in
                 CartItemCard(
                     line: line,
@@ -161,6 +172,27 @@ struct GiveProductsView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+    }
+    
+    private var paymentTypeSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text(String(localized: "Payment Type"))
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Theme.ink2)
+            
+            Picker("", selection: $paymentType) {
+                Text(String(localized: "Cash")).tag(PaymentType.cash)
+                Text(String(localized: "Installment")).tag(PaymentType.installment)
+            }
+            .pickerStyle(.segmented)
+        }
+        .padding(Spacing.md)
+        .background(Color.Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        .onChange(of: paymentType) { _, newValue in
+            updateAllLinesPaymentType(to: newValue)
+        }
     }
     
     private var attachmentSection: some View {
@@ -260,6 +292,12 @@ struct GiveProductsView: View {
         }
     }
     
+    private func updateAllLinesPaymentType(to newPaymentType: PaymentType) {
+        for index in lines.indices {
+            lines[index].paymentType = newPaymentType
+        }
+    }
+    
     private func confirmDistribution() {
         // Save attachment if present
         var attachmentFileName: String? = nil
@@ -273,6 +311,7 @@ struct GiveProductsView: View {
             try LedgerService.recordDistribution(
                 to: salesman,
                 items: items,
+                paymentType: paymentType,
                 attachmentFileName: attachmentFileName,
                 in: modelContext
             )
@@ -325,7 +364,7 @@ private struct CartItemCard: View {
                 Spacer()
                 
                 HStack(spacing: Spacing.xs) {
-                    Text(CurrencyFormatter.string(line.productSellingPrice))
+                    Text(CurrencyFormatter.string(line.unitPrice))
                     Text(CurrencyFormatter.symbol)
                     Text("·")
                     Text(String(localized: "\(line.productCurrentStock) in stock"))

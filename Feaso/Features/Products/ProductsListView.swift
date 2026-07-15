@@ -129,7 +129,7 @@ private struct ProductRow: View {
                     Text(CurrencyFormatter.string(product.costPrice))
                     Text("·")
                     Text(String(localized: "Sell"))
-                    Text(CurrencyFormatter.string(product.sellingPrice))
+                    Text(CurrencyFormatter.string(product.cashPrice))
                 }
                 .font(.caption)
                 .foregroundStyle(Color.Theme.ink2)

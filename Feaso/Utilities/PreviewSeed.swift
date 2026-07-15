@@ -12,56 +12,64 @@ enum PreviewSeed {
         let tv = Product(
             name: "TV",
             costPrice: 7000,
-            sellingPrice: 10000,
+            cashPrice: 10000,
+            installmentPrice: 12000,
             openingStock: 50,
             reorderThreshold: 5
         )
         let soundbar = Product(
             name: "Soundbar",
             costPrice: 1400,
-            sellingPrice: 2000,
+            cashPrice: 2000,
+            installmentPrice: 2400,
             openingStock: 30,
             reorderThreshold: 5
         )
         let coffeeMachine = Product(
             name: "Coffee Machine",
             costPrice: 2100,
-            sellingPrice: 3000,
+            cashPrice: 3000,
+            installmentPrice: 3600,
             openingStock: 25,
             reorderThreshold: 3
         )
         let fan = Product(
             name: "Fan",
             costPrice: 350,
-            sellingPrice: 500,
+            cashPrice: 500,
+            installmentPrice: 600,
             openingStock: 100,
             reorderThreshold: 10
         )
         let toaster = Product(
             name: "Toaster",
             costPrice: 280,
-            sellingPrice: 400,
+            cashPrice: 400,
+            installmentPrice: 480,
             openingStock: 40,
             reorderThreshold: 5
         )
         let blender = Product(
             name: "Blender",
             costPrice: 420,
-            sellingPrice: 600,
+            cashPrice: 600,
+            installmentPrice: 720,
             openingStock: 35,
             reorderThreshold: 5
         )
         let microwave = Product(
             name: "Microwave",
             costPrice: 1750,
-            sellingPrice: 2500,
+            cashPrice: 2500,
+            installmentPrice: 3000,
             openingStock: 20,
             reorderThreshold: 3
         )
         let airConditioner = Product(
             name: "Air Conditioner",
             costPrice: 8400,
-            sellingPrice: 12000,
+            cashPrice: 12000,
+            installmentPrice: 14400,
             openingStock: 15,
             reorderThreshold: 2
         )
