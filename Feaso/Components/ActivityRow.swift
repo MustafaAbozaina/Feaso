@@ -13,6 +13,8 @@ struct ActivityRow: View {
             return "arrow.uturn.backward"
         case .adjustment:
             return transaction.isReversal ? "arrow.uturn.backward" : "pencil"
+        case .stockReceipt:
+            return "arrow.down.to.line.compact"
         }
     }
     
@@ -24,6 +26,8 @@ struct ActivityRow: View {
             return Color.Theme.accentBg
         case .return, .adjustment:
             return Color.Theme.surface2
+        case .stockReceipt:
+            return Color.Theme.successBg
         }
     }
     
@@ -35,6 +39,8 @@ struct ActivityRow: View {
             return Color.Theme.accent
         case .return, .adjustment:
             return Color.Theme.ink2
+        case .stockReceipt:
+            return Color.Theme.success
         }
     }
     
@@ -51,11 +57,13 @@ struct ActivityRow: View {
             return String(localized: "Products returned")
         case .adjustment:
             return String(localized: "Adjustment")
+        case .stockReceipt:
+            return String(localized: "Stock received")
         }
     }
     
     private var detail: String? {
-        if transaction.type == .distribution || transaction.type == .return {
+        if transaction.type == .distribution || transaction.type == .return || transaction.type == .stockReceipt {
             let itemDescriptions = transaction.items.compactMap { item -> String? in
                 guard let productName = item.product?.name else { return nil }
                 return "\(item.quantity) × \(productName)"

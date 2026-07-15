@@ -29,7 +29,7 @@ final class Transaction {
     init(
         type: TransactionType,
         amount: Decimal,
-        salesman: Salesman,
+        salesman: Salesman? = nil,
         occurredAt: Date = .now,
         note: String? = nil,
         attachmentFileName: String? = nil

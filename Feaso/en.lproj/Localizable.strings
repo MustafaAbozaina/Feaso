@@ -223,3 +223,17 @@
 "%lld available" = "%lld available";
 "Select product to return" = "Select product to return";
 
+// MARK: - Receive Stock
+"Receive Stock" = "Receive Stock";
+"New Product" = "New Product";
+"Discard Stock Receipt?" = "Discard Stock Receipt?";
+"Add product" = "Add product";
+"Total Value" = "Total Value";
+"%lld units across %lld products" = "%lld units across %lld products";
+"Confirm Receipt" = "Confirm Receipt";
+"Supplier, invoice number, etc." = "Supplier, invoice number, etc.";
+"Select Product" = "Select Product";
+"Stock received" = "Stock received";
+"Stock Receipt" = "Stock Receipt";
+"Stock added to inventory" = "Stock added to inventory";
+

@@ -423,6 +423,8 @@ enum StatementGenerator {
             return String(localized: "Return Receipt")
         case .adjustment:
             return String(localized: "Adjustment Receipt")
+        case .stockReceipt:
+            return String(localized: "Stock Receipt")
         }
     }
     
@@ -436,6 +438,8 @@ enum StatementGenerator {
             return String(localized: "Return Total")
         case .adjustment:
             return String(localized: "Adjustment Amount")
+        case .stockReceipt:
+            return String(localized: "Stock Value")
         }
     }
     
@@ -513,6 +517,8 @@ enum StatementGenerator {
             return String(localized: "Products returned")
         case .adjustment:
             return String(localized: "Adjustment")
+        case .stockReceipt:
+            return String(localized: "Stock received")
         }
     }
     
@@ -526,6 +532,8 @@ enum StatementGenerator {
             return "↩️"
         case .adjustment:
             return "📝"
+        case .stockReceipt:
+            return "📥"
         }
     }
     

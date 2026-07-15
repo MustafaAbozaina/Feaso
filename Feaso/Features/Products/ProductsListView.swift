@@ -9,6 +9,7 @@ struct ProductsListView: View {
     private var products: [Product]
     
     @State private var showingAddSheet = false
+    @State private var showingReceiveStock = false
     @State private var selectedProduct: Product?
     
     private var inventoryValue: Decimal {
@@ -33,8 +34,18 @@ struct ProductsListView: View {
         .background(Color.Theme.background)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showingAddSheet = true
+                Menu {
+                    Button {
+                        showingAddSheet = true
+                    } label: {
+                        Label(String(localized: "New Product"), systemImage: "shippingbox")
+                    }
+                    
+                    Button {
+                        showingReceiveStock = true
+                    } label: {
+                        Label(String(localized: "Receive Stock"), systemImage: "arrow.down.to.line.compact")
+                    }
                 } label: {
                     Image(systemName: "plus")
                 }
@@ -48,6 +59,11 @@ struct ProductsListView: View {
         .sheet(isPresented: $showingAddSheet) {
             NavigationStack {
                 ProductEditorView()
+            }
+        }
+        .sheet(isPresented: $showingReceiveStock) {
+            NavigationStack {
+                ReceiveStockView()
             }
         }
     }

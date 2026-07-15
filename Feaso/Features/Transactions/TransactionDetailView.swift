@@ -20,6 +20,8 @@ struct TransactionDetailView: View {
             return String(localized: "Return")
         case .adjustment:
             return String(localized: "Adjustment")
+        case .stockReceipt:
+            return String(localized: "Stock Receipt")
         }
     }
     
@@ -33,6 +35,8 @@ struct TransactionDetailView: View {
             return "arrow.uturn.backward.circle.fill"
         case .adjustment:
             return transaction.isReversal ? "arrow.uturn.backward.circle.fill" : "pencil.circle.fill"
+        case .stockReceipt:
+            return "arrow.down.to.line.circle.fill"
         }
     }
     
@@ -41,7 +45,7 @@ struct TransactionDetailView: View {
             return Color.Theme.ink3
         }
         switch transaction.type {
-        case .payment:
+        case .payment, .stockReceipt:
             return Color.Theme.success
         case .distribution:
             return Color.Theme.accent
@@ -143,6 +147,13 @@ struct TransactionDetailView: View {
     }
     
     private var transactionDescription: String {
+        switch transaction.type {
+        case .stockReceipt:
+            return String(localized: "Stock added to inventory")
+        default:
+            break
+        }
+        
         guard let salesman = transaction.salesman else {
             return ""
         }
@@ -159,6 +170,8 @@ struct TransactionDetailView: View {
                 return String(localized: "Reversal for \(salesman.name)")
             }
             return String(localized: "Balance adjustment for \(salesman.name)")
+        case .stockReceipt:
+            return "" // Already handled above
         }
     }
     
@@ -257,6 +270,8 @@ struct TransactionDetailView: View {
             return String(localized: "Return")
         case .adjustment:
             return transaction.isReversal ? String(localized: "Reversal") : String(localized: "Adjustment")
+        case .stockReceipt:
+            return String(localized: "Stock Receipt")
         }
     }
     
@@ -468,6 +483,8 @@ private struct TransactionReceiptPreviewView: View {
             return String(localized: "Return Receipt")
         case .adjustment:
             return String(localized: "Adjustment Receipt")
+        case .stockReceipt:
+            return String(localized: "Stock Receipt")
         }
     }
     

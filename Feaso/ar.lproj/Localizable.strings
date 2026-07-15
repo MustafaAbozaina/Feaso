@@ -222,3 +222,17 @@
 "%lld available" = "%lld متاح";
 "Select product to return" = "اختر منتج للإرجاع";
 
+// MARK: - Receive Stock
+"Receive Stock" = "استلام مخزون";
+"New Product" = "منتج جديد";
+"Discard Stock Receipt?" = "تجاهل استلام المخزون؟";
+"Add product" = "إضافة منتج";
+"Total Value" = "القيمة الإجمالية";
+"%lld units across %lld products" = "%lld وحدة عبر %lld منتج";
+"Confirm Receipt" = "تأكيد الاستلام";
+"Supplier, invoice number, etc." = "المورد، رقم الفاتورة، إلخ.";
+"Select Product" = "اختر منتج";
+"Stock received" = "تم استلام مخزون";
+"Stock Receipt" = "استلام مخزون";
+"Stock added to inventory" = "تمت إضافة مخزون للمستودع";
+

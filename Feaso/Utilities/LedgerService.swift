@@ -48,6 +48,40 @@ enum LedgerService {
     }
 
     @MainActor
+    static func recordStockReceipt(
+        items: [(product: Product, quantity: Int)],
+        note: String? = nil,
+        attachmentFileName: String? = nil,
+        occurredAt: Date = .now,
+        in context: ModelContext
+    ) throws {
+        let transactionItems = items.map { item in
+            TransactionItem(product: item.product, quantity: item.quantity)
+        }
+        // Use cost price for valuation of received stock
+        let total = transactionItems.reduce(Decimal(0)) { sum, item in
+            sum + (Decimal(item.quantity) * (item.product?.costPrice ?? 0))
+        }
+
+        let transaction = Transaction(
+            type: .stockReceipt,
+            amount: total,
+            salesman: nil,
+            occurredAt: occurredAt,
+            note: note,
+            attachmentFileName: attachmentFileName
+        )
+        context.insert(transaction)
+
+        for item in transactionItems {
+            item.transaction = transaction
+            context.insert(item)
+        }
+
+        try context.save()
+    }
+
+    @MainActor
     static func recordPayment(
         from salesman: Salesman,
         amount: Decimal,

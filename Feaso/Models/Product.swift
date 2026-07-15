@@ -31,7 +31,7 @@ final class Product {
         self.createdAt = .now
     }
     
-    /// Current stock = opening - distributed + returned, excluding reversed transactions.
+    /// Current stock = opening - distributed + returned + received, excluding reversed transactions.
     var currentStock: Int {
         let activeItems = transactionItems.filter {
             $0.transaction?.reversedBy == nil
@@ -42,7 +42,10 @@ final class Product {
         let returned = activeItems
             .filter { $0.transaction?.type == .return }
             .reduce(0) { $0 + $1.quantity }
-        return openingStock - distributed + returned
+        let received = activeItems
+            .filter { $0.transaction?.type == .stockReceipt }
+            .reduce(0) { $0 + $1.quantity }
+        return openingStock - distributed + returned + received
     }
     
     var stockStatus: StockStatus {
