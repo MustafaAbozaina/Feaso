@@ -62,6 +62,15 @@ struct ActivityRow: View {
         }
     }
     
+    /// Badge text for payment type (only shown for distributions)
+    private var paymentTypeBadge: String? {
+        guard transaction.type == .distribution,
+              let paymentType = transaction.paymentType else {
+            return nil
+        }
+        return paymentType.shortName
+    }
+    
     private var detail: String? {
         if transaction.type == .distribution || transaction.type == .return || transaction.type == .stockReceipt {
             let itemDescriptions = transaction.items.compactMap { item -> String? in
@@ -96,10 +105,23 @@ struct ActivityRow: View {
                 }
             
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(title)
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color.Theme.ink)
+                HStack(spacing: Spacing.sm) {
+                    Text(title)
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.Theme.ink)
+                    
+                    if let badge = paymentTypeBadge {
+                        Text(badge)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.Theme.accent)
+                            .padding(.horizontal, Spacing.sm)
+                            .padding(.vertical, 2)
+                            .background(Color.Theme.accentBg)
+                            .clipShape(Capsule())
+                    }
+                }
                 
                 if let detail, !detail.isEmpty {
                     Text(detail)
@@ -109,7 +131,7 @@ struct ActivityRow: View {
                 }
             }
             
-            Spacer()
+            Spacer(minLength: 4)
             
             VStack(alignment: .trailing, spacing: Spacing.xs) {
                 HStack(spacing: 2) {

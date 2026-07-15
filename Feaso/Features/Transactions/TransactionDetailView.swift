@@ -235,6 +235,17 @@ struct TransactionDetailView: View {
                     value: typeDisplayName
                 )
                 
+                // Payment Type (for distributions only)
+                if transaction.type == .distribution, let paymentType = transaction.paymentType {
+                    Divider()
+                        .padding(.horizontal, Spacing.md)
+                    
+                    DetailRow(
+                        label: String(localized: "Payment Type"),
+                        value: paymentType.localizedName
+                    )
+                }
+                
                 // Note
                 if let note = transaction.note, !note.isEmpty {
                     Divider()

@@ -36,6 +36,16 @@ struct ProductEditorView: View {
         return product.transactionItems.isEmpty
     }
     
+    private var showInstallmentPriceWarning: Bool {
+        guard let cashPrice = Decimal(string: cashPriceText),
+              let installmentPrice = Decimal(string: installmentPriceText),
+              !cashPriceText.isEmpty,
+              !installmentPriceText.isEmpty else {
+            return false
+        }
+        return installmentPrice < cashPrice
+    }
+    
     init(product: Product? = nil) {
         self.product = product
     }
@@ -81,6 +91,15 @@ struct ProductEditorView: View {
                 }
             } header: {
                 Text(String(localized: "Pricing"))
+            } footer: {
+                if showInstallmentPriceWarning {
+                    Label(
+                        String(localized: "Installment price is lower than cash price"),
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(Color.Theme.warning)
+                }
             }
             
             Section {

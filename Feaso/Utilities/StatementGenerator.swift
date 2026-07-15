@@ -274,6 +274,14 @@ enum StatementGenerator {
                 yPosition += 30
             }
             
+            // Payment Type (for distributions only)
+            if transaction.type == .distribution, let paymentType = transaction.paymentType {
+                String(localized: "Payment Type").draw(at: CGPoint(x: margin, y: yPosition), withAttributes: labelAttributes)
+                yPosition += 15
+                paymentType.localizedName.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: valueAttributes)
+                yPosition += 30
+            }
+            
             yPosition += 10
             
             // MARK: - Amount Box
@@ -509,10 +517,17 @@ enum StatementGenerator {
                 guard let name = item.product?.name else { return nil }
                 return "\(item.quantity)× \(name)"
             }
+            var description: String
             if items.isEmpty {
-                return String(localized: "Products distributed")
+                description = String(localized: "Products distributed")
+            } else {
+                description = items.joined(separator: ", ")
             }
-            return items.joined(separator: ", ")
+            // Append payment type if available
+            if let paymentType = transaction.paymentType {
+                description += " (\(paymentType.localizedName))"
+            }
+            return description
         case .return:
             return String(localized: "Products returned")
         case .adjustment:

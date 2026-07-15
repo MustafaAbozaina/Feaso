@@ -44,6 +44,7 @@
 "Reversal" = "Reversal";
 "Cash" = "Cash";
 "Installment" = "Installment";
+"Inst." = "Inst.";
 "Payment Type" = "Payment Type";
 
 // MARK: - Transaction Detail
@@ -128,6 +129,7 @@
 "Cost Price" = "Cost Price";
 "Cash Price" = "Cash Price";
 "Installment Price" = "Installment Price";
+"Installment price is lower than cash price" = "Installment price is lower than cash price";
 "Inventory" = "Inventory";
 "Opening Stock" = "Opening Stock";
 "Reorder Threshold" = "Reorder Threshold";

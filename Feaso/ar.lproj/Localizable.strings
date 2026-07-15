@@ -44,6 +44,7 @@
 "Reversal" = "إلغاء";
 "Cash" = "كاش";
 "Installment" = "تقسيط";
+"Inst." = "قسط";
 "Payment Type" = "طريقة الدفع";
 
 // MARK: - Transaction Detail
@@ -127,6 +128,7 @@
 "Cost Price" = "سعر التكلفة";
 "Cash Price" = "سعر الكاش";
 "Installment Price" = "سعر التقسيط";
+"Installment price is lower than cash price" = "سعر التقسيط أقل من سعر الكاش";
 "Inventory" = "المخزون";
 "Opening Stock" = "المخزون الافتتاحي";
 "Reorder Threshold" = "حد إعادة الطلب";
