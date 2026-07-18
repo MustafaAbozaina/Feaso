@@ -2,16 +2,58 @@ import SwiftUI
 
 struct InstallmentSetupView: View {
     let totalAmount: Decimal
-    @Binding var numberOfInstallments: Int
-    @Binding var firstDueDate: Date
-    @Binding var interval: InstallmentInterval
+    let initialNumberOfInstallments: Int
+    let initialFirstDueDate: Date
+    let initialInterval: InstallmentInterval
+    let initialCustomAmounts: [Decimal]?
+    let initialCustomDates: [Date]?
+    let onSave: (Int, Date, InstallmentInterval, [Decimal]?, [Date]?) -> Void
     
     @Environment(\.dismiss) private var dismiss
     
-    @State private var customAmounts: [String] = []
-    @State private var customDates: [Date] = []
+    // Local state for editing
+    @State private var numberOfInstallments: Int
+    @State private var firstDueDate: Date
+    @State private var interval: InstallmentInterval
+    @State private var customAmountsStrings: [String] = []
+    @State private var customDatesLocal: [Date] = []
     @State private var isCustomizingAmounts = false
     @State private var isCustomizingDates = false
+    
+    init(
+        totalAmount: Decimal,
+        numberOfInstallments: Int,
+        firstDueDate: Date,
+        interval: InstallmentInterval,
+        existingCustomAmounts: [Decimal]? = nil,
+        existingCustomDates: [Date]? = nil,
+        onSave: @escaping (Int, Date, InstallmentInterval, [Decimal]?, [Date]?) -> Void
+    ) {
+        self.totalAmount = totalAmount
+        self.initialNumberOfInstallments = numberOfInstallments
+        self.initialFirstDueDate = firstDueDate
+        self.initialInterval = interval
+        self.initialCustomAmounts = existingCustomAmounts
+        self.initialCustomDates = existingCustomDates
+        self.onSave = onSave
+        
+        // Initialize local state
+        _numberOfInstallments = State(initialValue: numberOfInstallments)
+        _firstDueDate = State(initialValue: firstDueDate)
+        _interval = State(initialValue: interval)
+        
+        // Initialize custom amounts if they exist
+        if let amounts = existingCustomAmounts {
+            _customAmountsStrings = State(initialValue: amounts.map { "\($0)" })
+            _isCustomizingAmounts = State(initialValue: true)
+        }
+        
+        // Initialize custom dates if they exist
+        if let dates = existingCustomDates {
+            _customDatesLocal = State(initialValue: dates)
+            _isCustomizingDates = State(initialValue: true)
+        }
+    }
     
     private var calculatedAmounts: [Decimal] {
         let baseAmount = totalAmount / Decimal(numberOfInstallments)
@@ -24,26 +66,26 @@ struct InstallmentSetupView: View {
     }
     
     private var customDecimalAmounts: [Decimal] {
-        customAmounts.compactMap { Decimal(string: $0) }
+        customAmountsStrings.compactMap { Decimal(string: $0) }
     }
     
     private var customAmountsTotal: Decimal {
         customDecimalAmounts.reduce(Decimal.zero) { $0 + $1 }
     }
     
-    private var hasCustomAmountError: Bool {
-        guard isCustomizingAmounts else { return false }
-        return customDecimalAmounts.count != numberOfInstallments || customAmountsTotal != totalAmount
-    }
-    
     private var dueDates: [Date] {
-        if isCustomizingDates && customDates.count == numberOfInstallments {
-            return customDates
+        if isCustomizingDates && customDatesLocal.count == numberOfInstallments {
+            return customDatesLocal
         }
         let calendar = Calendar.current
         return (0..<numberOfInstallments).map { index in
             calendar.date(byAdding: .day, value: interval.rawValue * index, to: firstDueDate) ?? firstDueDate
         }
+    }
+    
+    private var hasCustomAmountError: Bool {
+        guard isCustomizingAmounts else { return false }
+        return customDecimalAmounts.count != numberOfInstallments || customAmountsTotal != totalAmount
     }
     
     var body: some View {
@@ -179,7 +221,7 @@ struct InstallmentSetupView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "Done")) {
-                        dismiss()
+                        saveAndDismiss()
                     }
                     .disabled(isCustomizingAmounts && hasCustomAmountError)
                 }
@@ -189,10 +231,10 @@ struct InstallmentSetupView: View {
     
     private func amountBinding(for index: Int) -> Binding<String> {
         Binding(
-            get: { index < customAmounts.count ? customAmounts[index] : "" },
+            get: { index < customAmountsStrings.count ? customAmountsStrings[index] : "" },
             set: { newValue in
-                if index < customAmounts.count {
-                    customAmounts[index] = newValue
+                if index < customAmountsStrings.count {
+                    customAmountsStrings[index] = newValue
                 }
             }
         )
@@ -200,21 +242,37 @@ struct InstallmentSetupView: View {
     
     private func dateBinding(for index: Int) -> Binding<Date> {
         Binding(
-            get: { index < customDates.count ? customDates[index] : dueDates[index] },
-            set: { newValue in
-                if index < customDates.count {
-                    customDates[index] = newValue
+            get: { 
+                if index < customDatesLocal.count {
+                    return customDatesLocal[index]
                 }
+                // Fallback to calculated date
+                let calendar = Calendar.current
+                return calendar.date(byAdding: .day, value: interval.rawValue * index, to: firstDueDate) ?? firstDueDate
+            },
+            set: { newValue in
+                // Ensure array is properly sized
+                while customDatesLocal.count <= index {
+                    let calendar = Calendar.current
+                    let nextIndex = customDatesLocal.count
+                    let defaultDate = calendar.date(byAdding: .day, value: interval.rawValue * nextIndex, to: firstDueDate) ?? firstDueDate
+                    customDatesLocal.append(defaultDate)
+                }
+                customDatesLocal[index] = newValue
             }
         )
     }
     
     private func initializeCustomAmounts() {
-        customAmounts = calculatedAmounts.map { "\($0)" }
+        customAmountsStrings = calculatedAmounts.map { "\($0)" }
     }
     
     private func initializeCustomDates() {
-        customDates = dueDates
+        // Initialize with calculated dates based on interval
+        let calendar = Calendar.current
+        customDatesLocal = (0..<numberOfInstallments).map { index in
+            calendar.date(byAdding: .day, value: interval.rawValue * index, to: firstDueDate) ?? firstDueDate
+        }
     }
     
     private func updateCustomAmounts(for count: Int) {
@@ -228,13 +286,33 @@ struct InstallmentSetupView: View {
                     index == count - 1 ? roundedBase + remainder : roundedBase
                 }
             }()
-            customAmounts = newCalculated.map { "\($0)" }
+            customAmountsStrings = newCalculated.map { "\($0)" }
         }
         
         // Also update custom dates if customizing
         if isCustomizingDates {
             initializeCustomDates()
         }
+    }
+    
+    private func saveAndDismiss() {
+        // Determine custom amounts
+        let customAmounts: [Decimal]? = if isCustomizingAmounts && !hasCustomAmountError {
+            customDecimalAmounts
+        } else {
+            nil
+        }
+        
+        // Determine custom dates
+        let customDates: [Date]? = if isCustomizingDates && customDatesLocal.count == numberOfInstallments {
+            customDatesLocal
+        } else {
+            nil
+        }
+        
+        // Call the closure with all values
+        onSave(numberOfInstallments, firstDueDate, interval, customAmounts, customDates)
+        dismiss()
     }
 }
 
@@ -252,8 +330,11 @@ private extension Decimal {
 #Preview {
     InstallmentSetupView(
         totalAmount: Decimal(1500),
-        numberOfInstallments: .constant(3),
-        firstDueDate: .constant(Date()),
-        interval: .constant(.biweekly)
+        numberOfInstallments: 3,
+        firstDueDate: Date(),
+        interval: .biweekly,
+        existingCustomAmounts: nil,
+        existingCustomDates: nil,
+        onSave: { _, _, _, _, _ in }
     )
 }

@@ -10,6 +10,11 @@ struct RootView: View {
                 Label(String(localized: "Salesmen"), systemImage: "person.2.fill")
             }
             
+            CollectionsView()
+            .tabItem {
+                Label(String(localized: "Collections"), systemImage: "banknote.fill")
+            }
+            
             NavigationStack {
                 ProductsListView()
             }

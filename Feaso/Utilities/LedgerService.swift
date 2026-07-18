@@ -24,18 +24,23 @@ enum LedgerService {
         /// Custom amounts for each installment (if nil, divides total evenly)
         let customAmounts: [Decimal]?
         
-        init(numberOfInstallments: Int, firstDueDate: Date, interval: InstallmentInterval, customAmounts: [Decimal]? = nil) {
+        /// Custom dates for each installment (if nil, uses interval calculation)
+        let customDates: [Date]?
+        
+        init(numberOfInstallments: Int, firstDueDate: Date, interval: InstallmentInterval, customAmounts: [Decimal]? = nil, customDates: [Date]? = nil) {
             self.numberOfInstallments = numberOfInstallments
             self.firstDueDate = firstDueDate
             self.intervalDays = interval.rawValue
             self.customAmounts = customAmounts
+            self.customDates = customDates
         }
         
-        init(numberOfInstallments: Int, firstDueDate: Date, intervalDays: Int, customAmounts: [Decimal]? = nil) {
+        init(numberOfInstallments: Int, firstDueDate: Date, intervalDays: Int, customAmounts: [Decimal]? = nil, customDates: [Date]? = nil) {
             self.numberOfInstallments = numberOfInstallments
             self.firstDueDate = firstDueDate
             self.intervalDays = intervalDays
             self.customAmounts = customAmounts
+            self.customDates = customDates
         }
     }
     
@@ -93,10 +98,18 @@ enum LedgerService {
         var installments: [Installment] = []
         let calendar = Calendar.current
         
+        // Helper to get due date for an index
+        func getDueDate(for index: Int) -> Date {
+            if let customDates = config.customDates, index < customDates.count {
+                return customDates[index]
+            }
+            return calendar.date(byAdding: .day, value: config.intervalDays * index, to: config.firstDueDate) ?? config.firstDueDate
+        }
+        
         if let customAmounts = config.customAmounts, customAmounts.count == config.numberOfInstallments {
             // Use custom amounts
             for (index, amount) in customAmounts.enumerated() {
-                let dueDate = calendar.date(byAdding: .day, value: config.intervalDays * index, to: config.firstDueDate) ?? config.firstDueDate
+                let dueDate = getDueDate(for: index)
                 let installment = Installment(
                     sequenceNumber: index + 1,
                     amount: amount,
@@ -112,7 +125,7 @@ enum LedgerService {
             let remainder = total - (roundedBase * Decimal(config.numberOfInstallments))
             
             for index in 0..<config.numberOfInstallments {
-                let dueDate = calendar.date(byAdding: .day, value: config.intervalDays * index, to: config.firstDueDate) ?? config.firstDueDate
+                let dueDate = getDueDate(for: index)
                 // Add remainder to the last installment
                 let amount = index == config.numberOfInstallments - 1 ? roundedBase + remainder : roundedBase
                 let installment = Installment(

@@ -296,3 +296,26 @@
 "%lld unpaid" = "%lld unpaid";
 "#%lld of %lld" = "#%lld of %lld";
 
+// MARK: - Collections
+"Collections" = "Collections";
+"By Date" = "By Date";
+"Custom Range" = "Custom Range";
+"Show until" = "Show until";
+"From" = "From";
+"To" = "To";
+"Expected Total" = "Expected Total";
+"from %lld salesmen · %lld payments" = "from %lld salesmen · %lld payments";
+"Due" = "Due";
+"No Pending Collections" = "No Pending Collections";
+"No installments due in this period" = "No installments due in this period";
+"%lld days late" = "%lld days late";
+"Today" = "Today";
+"Tomorrow" = "Tomorrow";
+"in %lld days" = "in %lld days";
+
+// MARK: - Payment Confirmation
+"Mark as Paid?" = "Mark as Paid?";
+"Mark as Paid" = "Mark as Paid";
+"This will record a payment of %@ %@ and reduce the salesman's balance." = "This will record a payment of %@ %@ and reduce the salesman's balance.";
+"This Month" = "This Month";
+

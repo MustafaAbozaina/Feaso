@@ -295,3 +295,26 @@
 "%lld unpaid" = "%lld غير مدفوع";
 "#%lld of %lld" = "#%lld من %lld";
 
+// MARK: - Collections
+"Collections" = "التحصيلات";
+"By Date" = "حسب التاريخ";
+"Custom Range" = "نطاق مخصص";
+"Show until" = "عرض حتى";
+"From" = "من";
+"To" = "إلى";
+"Expected Total" = "الإجمالي المتوقع";
+"from %lld salesmen · %lld payments" = "من %lld مندوبين · %lld دفعة";
+"Due" = "مستحق";
+"No Pending Collections" = "لا توجد تحصيلات معلقة";
+"No installments due in this period" = "لا توجد أقساط مستحقة في هذه الفترة";
+"%lld days late" = "متأخر %lld يوم";
+"Today" = "اليوم";
+"Tomorrow" = "غداً";
+"in %lld days" = "خلال %lld يوم";
+
+// MARK: - Payment Confirmation
+"Mark as Paid?" = "تأكيد الدفع؟";
+"Mark as Paid" = "تأكيد الدفع";
+"This will record a payment of %@ %@ and reduce the salesman's balance." = "سيتم تسجيل دفعة بقيمة %@ %@ وتخفيض رصيد المندوب.";
+"This Month" = "هذا الشهر";
+

@@ -23,6 +23,8 @@ struct InstallmentsListView: View {
     @Query private var allInstallments: [Installment]
     
     @State private var viewMode: InstallmentsViewMode = .byDueDate
+    @State private var installmentToConfirm: Installment?
+    @State private var showPaymentConfirmation = false
     
     init(salesman: Salesman, filterTransaction: Transaction? = nil) {
         self.salesman = salesman
@@ -104,6 +106,21 @@ struct InstallmentsListView: View {
         .background(Color.Theme.background)
         .navigationTitle(filterTransaction != nil ? String(localized: "Installments") : String(localized: "All Installments"))
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+            String(localized: "Mark as Paid?"),
+            isPresented: $showPaymentConfirmation,
+            titleVisibility: .visible,
+            presenting: installmentToConfirm
+        ) { installment in
+            Button(String(localized: "Mark as Paid")) {
+                confirmPayment(installment)
+            }
+            Button(String(localized: "Cancel"), role: .cancel) {
+                installmentToConfirm = nil
+            }
+        } message: { installment in
+            Text(String(localized: "This will record a payment of \(CurrencyFormatter.string(installment.amount)) \(CurrencyFormatter.symbol) and reduce the salesman's balance."))
+        }
     }
     
     private var viewModeToggle: some View {
@@ -210,15 +227,27 @@ struct InstallmentsListView: View {
     }
     
     private func togglePaid(_ installment: Installment) {
-        do {
-            if installment.isPaid {
+        if installment.isPaid {
+            // Unpaid doesn't need confirmation - just undo
+            do {
                 try LedgerService.markInstallmentUnpaid(installment, in: modelContext)
-            } else {
-                try LedgerService.markInstallmentPaid(installment, in: modelContext)
+            } catch {
+                print("Failed to mark installment unpaid: \(error)")
             }
-        } catch {
-            print("Failed to toggle installment paid status: \(error)")
+        } else {
+            // Show confirmation before marking as paid
+            installmentToConfirm = installment
+            showPaymentConfirmation = true
         }
+    }
+    
+    private func confirmPayment(_ installment: Installment) {
+        do {
+            try LedgerService.markInstallmentPaid(installment, in: modelContext)
+        } catch {
+            print("Failed to mark installment paid: \(error)")
+        }
+        installmentToConfirm = nil
     }
 }
 

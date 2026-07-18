@@ -21,6 +21,8 @@ struct GiveProductsView: View {
     @State private var numberOfInstallments: Int = 3
     @State private var firstDueDate: Date = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
     @State private var installmentInterval: InstallmentInterval = .biweekly
+    @State private var customAmounts: [Decimal]? = nil
+    @State private var customDates: [Date]? = nil
     @State private var showingInstallmentCustomization = false
     
     private var newTotal: Decimal {
@@ -119,9 +121,18 @@ struct GiveProductsView: View {
         .sheet(isPresented: $showingInstallmentCustomization) {
             InstallmentSetupView(
                 totalAmount: newTotal,
-                numberOfInstallments: $numberOfInstallments,
-                firstDueDate: $firstDueDate,
-                interval: $installmentInterval
+                numberOfInstallments: numberOfInstallments,
+                firstDueDate: firstDueDate,
+                interval: installmentInterval,
+                existingCustomAmounts: customAmounts,
+                existingCustomDates: customDates,
+                onSave: { newCount, newFirstDate, newInterval, newCustomAmounts, newCustomDates in
+                    numberOfInstallments = newCount
+                    firstDueDate = newFirstDate
+                    installmentInterval = newInterval
+                    customAmounts = newCustomAmounts
+                    customDates = newCustomDates
+                }
             )
         }
     }
@@ -305,22 +316,42 @@ struct GiveProductsView: View {
     
     private var installmentPreview: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(String(localized: "Preview"))
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundStyle(Color.Theme.ink3)
+            HStack {
+                Text(String(localized: "Preview"))
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Theme.ink3)
+                
+                if customDates != nil || customAmounts != nil {
+                    Text(String(localized: "(Customized)"))
+                        .font(.caption2)
+                        .foregroundStyle(Color.Theme.accent)
+                }
+            }
             
-            let installmentAmount = newTotal / Decimal(numberOfInstallments)
             let calendar = Calendar.current
             
             ForEach(0..<min(numberOfInstallments, 3), id: \.self) { index in
-                let dueDate = calendar.date(byAdding: .day, value: installmentInterval.rawValue * index, to: firstDueDate) ?? firstDueDate
+                // Use custom date if available, otherwise calculate
+                let dueDate: Date = if let customDates, index < customDates.count {
+                    customDates[index]
+                } else {
+                    calendar.date(byAdding: .day, value: installmentInterval.rawValue * index, to: firstDueDate) ?? firstDueDate
+                }
+                
+                // Use custom amount if available, otherwise calculate evenly
+                let amount: Decimal = if let customAmounts, index < customAmounts.count {
+                    customAmounts[index]
+                } else {
+                    newTotal / Decimal(numberOfInstallments)
+                }
+                
                 HStack {
                     Text("\(index + 1).")
                         .font(.caption)
                         .foregroundStyle(Color.Theme.ink3)
                         .frame(width: 20, alignment: .leading)
-                    Text(CurrencyFormatter.string(installmentAmount))
+                    Text(CurrencyFormatter.string(amount))
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundStyle(Color.Theme.ink)
@@ -462,7 +493,9 @@ struct GiveProductsView: View {
             installmentConfig = LedgerService.InstallmentConfig(
                 numberOfInstallments: numberOfInstallments,
                 firstDueDate: firstDueDate,
-                interval: installmentInterval
+                interval: installmentInterval,
+                customAmounts: customAmounts,
+                customDates: customDates
             )
         }
         
