@@ -15,11 +15,36 @@ struct PriceLot {
 
 enum LedgerService {
 
+    /// Configuration for creating installment schedules
+    struct InstallmentConfig {
+        let numberOfInstallments: Int
+        let firstDueDate: Date
+        let intervalDays: Int
+        
+        /// Custom amounts for each installment (if nil, divides total evenly)
+        let customAmounts: [Decimal]?
+        
+        init(numberOfInstallments: Int, firstDueDate: Date, interval: InstallmentInterval, customAmounts: [Decimal]? = nil) {
+            self.numberOfInstallments = numberOfInstallments
+            self.firstDueDate = firstDueDate
+            self.intervalDays = interval.rawValue
+            self.customAmounts = customAmounts
+        }
+        
+        init(numberOfInstallments: Int, firstDueDate: Date, intervalDays: Int, customAmounts: [Decimal]? = nil) {
+            self.numberOfInstallments = numberOfInstallments
+            self.firstDueDate = firstDueDate
+            self.intervalDays = intervalDays
+            self.customAmounts = customAmounts
+        }
+    }
+    
     @MainActor
     static func recordDistribution(
         to salesman: Salesman,
         items: [(product: Product, quantity: Int)],
         paymentType: PaymentType = .cash,
+        installmentConfig: InstallmentConfig? = nil,
         note: String? = nil,
         attachmentFileName: String? = nil,
         occurredAt: Date = .now,
@@ -45,7 +70,139 @@ enum LedgerService {
             item.transaction = transaction
             context.insert(item)
         }
+        
+        // Create installments if configured and payment type is installment
+        if paymentType == .installment, let config = installmentConfig {
+            let installments = createInstallments(for: total, config: config, transaction: transaction)
+            for installment in installments {
+                context.insert(installment)
+            }
+        }
 
+        try context.save()
+    }
+    
+    // MARK: - Installment Creation
+    
+    /// Creates installments for a transaction based on the configuration
+    private static func createInstallments(
+        for total: Decimal,
+        config: InstallmentConfig,
+        transaction: Transaction
+    ) -> [Installment] {
+        var installments: [Installment] = []
+        let calendar = Calendar.current
+        
+        if let customAmounts = config.customAmounts, customAmounts.count == config.numberOfInstallments {
+            // Use custom amounts
+            for (index, amount) in customAmounts.enumerated() {
+                let dueDate = calendar.date(byAdding: .day, value: config.intervalDays * index, to: config.firstDueDate) ?? config.firstDueDate
+                let installment = Installment(
+                    sequenceNumber: index + 1,
+                    amount: amount,
+                    dueDate: dueDate,
+                    transaction: transaction
+                )
+                installments.append(installment)
+            }
+        } else {
+            // Divide total evenly
+            let baseAmount = total / Decimal(config.numberOfInstallments)
+            let roundedBase = baseAmount.rounded(scale: 2, roundingMode: .down)
+            let remainder = total - (roundedBase * Decimal(config.numberOfInstallments))
+            
+            for index in 0..<config.numberOfInstallments {
+                let dueDate = calendar.date(byAdding: .day, value: config.intervalDays * index, to: config.firstDueDate) ?? config.firstDueDate
+                // Add remainder to the last installment
+                let amount = index == config.numberOfInstallments - 1 ? roundedBase + remainder : roundedBase
+                let installment = Installment(
+                    sequenceNumber: index + 1,
+                    amount: amount,
+                    dueDate: dueDate,
+                    transaction: transaction
+                )
+                installments.append(installment)
+            }
+        }
+        
+        return installments
+    }
+    
+    /// Updates installments for an existing transaction
+    @MainActor
+    static func updateInstallments(
+        for transaction: Transaction,
+        newInstallments: [(sequenceNumber: Int, amount: Decimal, dueDate: Date)],
+        in context: ModelContext
+    ) throws {
+        // Remove existing installments
+        for installment in transaction.installments {
+            context.delete(installment)
+        }
+        
+        // Create new installments
+        for data in newInstallments {
+            let installment = Installment(
+                sequenceNumber: data.sequenceNumber,
+                amount: data.amount,
+                dueDate: data.dueDate,
+                transaction: transaction
+            )
+            context.insert(installment)
+        }
+        
+        try context.save()
+    }
+    
+    /// Marks an installment as paid and creates a payment transaction
+    @MainActor
+    static func markInstallmentPaid(
+        _ installment: Installment,
+        paidDate: Date = .now,
+        in context: ModelContext
+    ) throws {
+        guard let transaction = installment.transaction,
+              let salesman = transaction.salesman else {
+            // Just mark as paid without creating payment if no salesman
+            installment.isPaid = true
+            installment.paidDate = paidDate
+            try context.save()
+            return
+        }
+        
+        // Create a payment transaction for this installment
+        let paymentNote = String(localized: "Installment #\(installment.sequenceNumber) payment")
+        let payment = Transaction(
+            type: .payment,
+            amount: -installment.amount,  // Negative to reduce balance
+            salesman: salesman,
+            occurredAt: paidDate,
+            note: paymentNote
+        )
+        context.insert(payment)
+        
+        // Link the payment to the installment
+        installment.isPaid = true
+        installment.paidDate = paidDate
+        installment.paymentTransaction = payment
+        
+        try context.save()
+    }
+    
+    /// Marks an installment as unpaid and reverses its payment transaction
+    @MainActor
+    static func markInstallmentUnpaid(
+        _ installment: Installment,
+        in context: ModelContext
+    ) throws {
+        // If there's an associated payment transaction, reverse it
+        if let paymentTransaction = installment.paymentTransaction {
+            try reverse(paymentTransaction, in: context)
+        }
+        
+        installment.isPaid = false
+        installment.paidDate = nil
+        installment.paymentTransaction = nil
         try context.save()
     }
 
@@ -252,6 +409,17 @@ enum LedgerService {
             }
         }
 
+        return result
+    }
+}
+
+// MARK: - Decimal Rounding Extension
+
+private extension Decimal {
+    func rounded(scale: Int, roundingMode: NSDecimalNumber.RoundingMode) -> Decimal {
+        var value = self
+        var result = Decimal()
+        NSDecimalRound(&result, &value, scale, roundingMode)
         return result
     }
 }

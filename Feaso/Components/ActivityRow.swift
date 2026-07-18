@@ -71,6 +71,11 @@ struct ActivityRow: View {
         return paymentType.shortName
     }
     
+    /// Number of overdue installments for this transaction
+    private var overdueCount: Int {
+        transaction.overdueInstallments.count
+    }
+    
     private var detail: String? {
         if transaction.type == .distribution || transaction.type == .return || transaction.type == .stockReceipt {
             let itemDescriptions = transaction.items.compactMap { item -> String? in
@@ -120,6 +125,21 @@ struct ActivityRow: View {
                             .padding(.vertical, 2)
                             .background(Color.Theme.accentBg)
                             .clipShape(Capsule())
+                    }
+                    
+                    if overdueCount > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.caption2)
+                            Text("\(overdueCount)")
+                                .font(.caption2)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundStyle(Color.Theme.warning)
+                        .padding(.horizontal, Spacing.xs)
+                        .padding(.vertical, 2)
+                        .background(Color.Theme.warningBg)
+                        .clipShape(Capsule())
                     }
                 }
                 

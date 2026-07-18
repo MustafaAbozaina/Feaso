@@ -10,6 +10,7 @@ struct SalesmanDetailView: View {
     @State private var navigateToGiveProducts = false
     @State private var navigateToRecordPayment = false
     @State private var navigateToReturnProducts = false
+    @State private var navigateToInstallments = false
     
     private var sortedTransactions: [Transaction] {
         salesman.transactions.sorted { $0.occurredAt > $1.occurredAt }
@@ -19,10 +20,26 @@ struct SalesmanDetailView: View {
         !salesman.transactions.isEmpty
     }
     
+    private var hasInstallments: Bool {
+        salesman.transactions.contains { $0.hasInstallments && $0.reversedBy == nil }
+    }
+    
+    private var unpaidInstallmentsCount: Int {
+        salesman.transactions
+            .filter { $0.reversedBy == nil }
+            .flatMap { $0.installments }
+            .filter { !$0.isPaid }
+            .count
+    }
+    
     var body: some View {
         List {
             if hasActivity {
                 balanceSection
+            }
+            
+            if hasInstallments {
+                installmentsSection
             }
             
             actionButtonsSection
@@ -74,6 +91,9 @@ struct SalesmanDetailView: View {
         .navigationDestination(item: $selectedTransaction) { transaction in
             TransactionDetailView(transaction: transaction)
         }
+        .navigationDestination(isPresented: $navigateToInstallments) {
+            InstallmentsListView(salesman: salesman)
+        }
     }
     
     // MARK: - Sections
@@ -86,6 +106,41 @@ struct SalesmanDetailView: View {
             )
             .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)
+        }
+    }
+    
+    private var installmentsSection: some View {
+        Section {
+            Button {
+                navigateToInstallments = true
+            } label: {
+                HStack {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.title3)
+                        .foregroundStyle(Color.Theme.accent)
+                        .frame(width: 32)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(String(localized: "Installments"))
+                            .font(.body)
+                            .foregroundStyle(Color.Theme.ink)
+                        
+                        if unpaidInstallmentsCount > 0 {
+                            Text(String(localized: "\(unpaidInstallmentsCount) unpaid"))
+                                .font(.caption)
+                                .foregroundStyle(Color.Theme.ink2)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(Color.Theme.ink3)
+                }
+                .padding(.vertical, Spacing.xs)
+            }
+            .buttonStyle(.plain)
         }
     }
     

@@ -16,7 +16,7 @@ struct LedgerTests {
     private func makeContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         return try ModelContainer(
-            for: Salesman.self, Product.self, Transaction.self, TransactionItem.self,
+            for: Salesman.self, Product.self, Transaction.self, TransactionItem.self, Installment.self,
             configurations: config
         )
     }
@@ -209,5 +209,446 @@ struct LedgerTests {
         try LedgerService.recordReturn(from: salesman, items: [(product, 4)], in: context)
 
         #expect(product.currentStock == 94)  // 100 − 10 + 4
+    }
+}
+
+// MARK: - Installment Tests
+
+@MainActor
+struct InstallmentTests {
+    
+    private func makeContainer() throws -> ModelContainer {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        return try ModelContainer(
+            for: Salesman.self, Product.self, Transaction.self, TransactionItem.self, Installment.self,
+            configurations: config
+        )
+    }
+    
+    private func makeSalesmanAndProduct(
+        in context: ModelContext,
+        cashPrice: Decimal = 100,
+        installmentPrice: Decimal = 120
+    ) -> (Salesman, Product) {
+        let salesman = Salesman(name: "Ahmed")
+        let product = Product(name: "Phone", costPrice: 80, cashPrice: cashPrice, installmentPrice: installmentPrice, openingStock: 50)
+        context.insert(salesman)
+        context.insert(product)
+        return (salesman, product)
+    }
+    
+    // MARK: - Installment Creation
+    
+    @Test func installmentDistributionCreatesInstallments() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context)
+        
+        let firstDueDate = Date()
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 3,
+            firstDueDate: firstDueDate,
+            interval: .biweekly
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 10)],
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        #expect(transaction.hasInstallments)
+        #expect(transaction.installments.count == 3)
+    }
+    
+    @Test func installmentAmountsEqualTransactionTotal() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context, installmentPrice: 100)
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 3,
+            firstDueDate: Date(),
+            interval: .monthly
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 10)],  // 10 × 100 = 1000
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        #expect(transaction.amount == 1000)
+        #expect(transaction.totalInstallmentAmount == 1000)
+    }
+    
+    @Test func installmentDatesAreCorrectlySpaced() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context)
+        
+        let calendar = Calendar.current
+        let firstDueDate = calendar.startOfDay(for: Date())
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 4,
+            firstDueDate: firstDueDate,
+            interval: .weekly  // 7 days
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 5)],
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        let sorted = transaction.sortedInstallments
+        
+        #expect(sorted.count == 4)
+        #expect(sorted[0].sequenceNumber == 1)
+        #expect(sorted[1].sequenceNumber == 2)
+        #expect(sorted[2].sequenceNumber == 3)
+        #expect(sorted[3].sequenceNumber == 4)
+        
+        // Check dates are 7 days apart
+        for i in 1..<sorted.count {
+            let daysBetween = calendar.dateComponents([.day], from: sorted[i-1].dueDate, to: sorted[i].dueDate).day
+            #expect(daysBetween == 7)
+        }
+    }
+    
+    @Test func installmentAmountsDistributedEvenly() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context, installmentPrice: 100)
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 3,
+            firstDueDate: Date(),
+            interval: .monthly
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 10)],  // 10 × 100 = 1000
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        let sorted = transaction.sortedInstallments
+        
+        // 1000 / 3 = 333.33... so expect 333.33, 333.33, 333.34 (remainder in last)
+        let sum = sorted.reduce(Decimal.zero) { $0 + $1.amount }
+        #expect(sum == 1000)
+    }
+    
+    // MARK: - Installment Payment
+    
+    @Test func markingInstallmentPaidCreatesPaymentTransaction() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context, installmentPrice: 300)
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 3,
+            firstDueDate: Date(),
+            interval: .monthly
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 1)],  // 1 × 300 = 300
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        #expect(salesman.balance == 300)
+        
+        let transaction = try #require(salesman.transactions.first { $0.type == .distribution })
+        let installment = try #require(transaction.sortedInstallments.first)
+        
+        try LedgerService.markInstallmentPaid(installment, in: context)
+        
+        #expect(installment.isPaid)
+        #expect(installment.paymentTransaction != nil)
+        #expect(salesman.balance == 200)  // 300 - 100 (one installment paid)
+    }
+    
+    @Test func markingInstallmentUnpaidReversesPayment() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context, installmentPrice: 300)
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 3,
+            firstDueDate: Date(),
+            interval: .monthly
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 1)],
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first { $0.type == .distribution })
+        let installment = try #require(transaction.sortedInstallments.first)
+        
+        try LedgerService.markInstallmentPaid(installment, in: context)
+        #expect(salesman.balance == 200)
+        
+        try LedgerService.markInstallmentUnpaid(installment, in: context)
+        #expect(!installment.isPaid)
+        #expect(salesman.balance == 300)  // Balance restored
+    }
+    
+    @Test func payingAllInstallmentsSettlesBalance() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context, installmentPrice: 300)
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 3,
+            firstDueDate: Date(),
+            interval: .monthly
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 1)],
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first { $0.type == .distribution })
+        
+        for installment in transaction.sortedInstallments {
+            try LedgerService.markInstallmentPaid(installment, in: context)
+        }
+        
+        #expect(salesman.balance == 0)
+        #expect(transaction.paidInstallmentsCount == 3)
+        #expect(transaction.remainingInstallmentAmount == 0)
+    }
+    
+    // MARK: - Installment Status
+    
+    @Test func overdueInstallmentDetection() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context)
+        
+        let pastDate = Calendar.current.date(byAdding: .day, value: -10, to: Date())!
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 2,
+            firstDueDate: pastDate,
+            intervalDays: 30
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 1)],
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        let firstInstallment = try #require(transaction.sortedInstallments.first)
+        
+        #expect(firstInstallment.isOverdue)
+        #expect(firstInstallment.status == .overdue)
+        #expect(transaction.hasOverdueInstallments)
+        #expect(transaction.overdueInstallments.count == 1)
+    }
+    
+    @Test func dueSoonInstallmentDetection() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context)
+        
+        let nearFutureDate = Calendar.current.date(byAdding: .day, value: 3, to: Date())!
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 1,
+            firstDueDate: nearFutureDate,
+            intervalDays: 30
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 1)],
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        let installment = try #require(transaction.sortedInstallments.first)
+        
+        #expect(!installment.isOverdue)
+        #expect(installment.status == .dueSoon)
+    }
+    
+    @Test func paidInstallmentNotOverdue() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context)
+        
+        let pastDate = Calendar.current.date(byAdding: .day, value: -10, to: Date())!
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 1,
+            firstDueDate: pastDate,
+            intervalDays: 30
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 1)],
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        let installment = try #require(transaction.sortedInstallments.first)
+        
+        try LedgerService.markInstallmentPaid(installment, in: context)
+        
+        #expect(!installment.isOverdue)  // Paid installments are never overdue
+        #expect(installment.status == .paid)
+        #expect(!transaction.hasOverdueInstallments)
+    }
+    
+    // MARK: - Transaction Helpers
+    
+    @Test func transactionInstallmentHelpers() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context, installmentPrice: 600)
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 3,
+            firstDueDate: Date(),
+            interval: .monthly
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 1)],  // 600 total
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        
+        #expect(transaction.hasInstallments)
+        #expect(transaction.totalInstallmentAmount == 600)
+        #expect(transaction.paidInstallmentAmount == 0)
+        #expect(transaction.remainingInstallmentAmount == 600)
+        #expect(transaction.paidInstallmentsCount == 0)
+        
+        // Pay first installment (200)
+        let first = try #require(transaction.sortedInstallments.first)
+        try LedgerService.markInstallmentPaid(first, in: context)
+        
+        #expect(transaction.paidInstallmentsCount == 1)
+        #expect(transaction.paidInstallmentAmount == 200)
+        #expect(transaction.remainingInstallmentAmount == 400)
+        
+        // Next due should be second installment
+        let nextDue = transaction.nextDueInstallment
+        #expect(nextDue?.sequenceNumber == 2)
+    }
+    
+    // MARK: - Cash Distribution Has No Installments
+    
+    @Test func cashDistributionHasNoInstallments() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context)
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 5)],
+            paymentType: .cash,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        #expect(!transaction.hasInstallments)
+        #expect(transaction.installments.isEmpty)
+    }
+    
+    @Test func installmentDistributionWithoutConfigHasNoInstallments() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context)
+        
+        // Installment payment type but no config
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 5)],
+            paymentType: .installment,
+            installmentConfig: nil,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        #expect(!transaction.hasInstallments)
+    }
+    
+    // MARK: - Update Installments
+    
+    @Test func updateInstallmentsReplacesSchedule() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (salesman, product) = makeSalesmanAndProduct(in: context, installmentPrice: 400)
+        
+        let config = LedgerService.InstallmentConfig(
+            numberOfInstallments: 4,
+            firstDueDate: Date(),
+            interval: .weekly
+        )
+        
+        try LedgerService.recordDistribution(
+            to: salesman,
+            items: [(product, 1)],
+            paymentType: .installment,
+            installmentConfig: config,
+            in: context
+        )
+        
+        let transaction = try #require(salesman.transactions.first)
+        #expect(transaction.installments.count == 4)
+        
+        // Update to 2 installments
+        let newSchedule = [
+            (sequenceNumber: 1, amount: Decimal(200), dueDate: Date()),
+            (sequenceNumber: 2, amount: Decimal(200), dueDate: Calendar.current.date(byAdding: .day, value: 30, to: Date())!)
+        ]
+        
+        try LedgerService.updateInstallments(for: transaction, newInstallments: newSchedule, in: context)
+        
+        #expect(transaction.installments.count == 2)
+        #expect(transaction.totalInstallmentAmount == 400)
     }
 }

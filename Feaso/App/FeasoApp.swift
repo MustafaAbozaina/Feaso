@@ -11,7 +11,8 @@ struct FeasoApp: App {
                 Salesman.self,
                 Product.self,
                 Transaction.self,
-                TransactionItem.self
+                TransactionItem.self,
+                Installment.self
             )
             self.modelContainer = container
             

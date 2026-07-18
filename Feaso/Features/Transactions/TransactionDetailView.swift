@@ -4,8 +4,11 @@ struct TransactionDetailView: View {
     let transaction: Transaction
     
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @State private var showingFullScreenImage = false
     @State private var showingReceiptPreview = false
+    @State private var showingInstallmentsList = false
+    @State private var showingInstallmentEditor = false
     
     private var title: String {
         if transaction.isReversal {
@@ -74,6 +77,10 @@ struct TransactionDetailView: View {
                     itemsCard
                 }
                 
+                if transaction.hasInstallments {
+                    installmentsCard
+                }
+                
                 detailsCard
                 
                 if transaction.hasAttachment {
@@ -105,6 +112,25 @@ struct TransactionDetailView: View {
             if let fileName = transaction.attachmentFileName,
                let image = ImageAttachmentService.loadImage(fileName: fileName) {
                 FullScreenImageView(image: image)
+            }
+        }
+        .sheet(isPresented: $showingInstallmentsList) {
+            if let salesman = transaction.salesman {
+                NavigationStack {
+                    InstallmentsListView(salesman: salesman, filterTransaction: transaction)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button(String(localized: "Done")) {
+                                    showingInstallmentsList = false
+                                }
+                            }
+                        }
+                }
+            }
+        }
+        .sheet(isPresented: $showingInstallmentEditor) {
+            NavigationStack {
+                InstallmentEditorView(transaction: transaction)
             }
         }
     }
@@ -196,6 +222,117 @@ struct TransactionDetailView: View {
             }
             .background(Color.Theme.surface)
             .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        }
+    }
+    
+    // MARK: - Installments Card
+    
+    private var installmentsCard: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            HStack {
+                Text(String(localized: "INSTALLMENTS"))
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Theme.ink2)
+                
+                Spacer()
+                
+                Button {
+                    showingInstallmentEditor = true
+                } label: {
+                    Text(String(localized: "Edit"))
+                        .font(.caption)
+                        .foregroundStyle(Color.Theme.accent)
+                }
+            }
+            
+            VStack(spacing: 0) {
+                // Progress summary
+                HStack {
+                    VStack(alignment: .leading, spacing: Spacing.xs) {
+                        Text(String(localized: "\(transaction.paidInstallmentsCount) of \(transaction.installments.count) paid"))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.Theme.ink)
+                        
+                        if transaction.hasOverdueInstallments {
+                            HStack(spacing: Spacing.xs) {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .font(.caption)
+                                Text(String(localized: "\(transaction.overdueInstallments.count) overdue"))
+                                    .font(.caption)
+                            }
+                            .foregroundStyle(Color.Theme.warning)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: Spacing.xs) {
+                        HStack(spacing: Spacing.xs) {
+                            Text(CurrencyFormatter.string(transaction.remainingInstallmentAmount))
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                            Text(CurrencyFormatter.symbol)
+                                .font(.caption)
+                                .foregroundStyle(Color.Theme.ink3)
+                        }
+                        Text(String(localized: "remaining"))
+                            .font(.caption)
+                            .foregroundStyle(Color.Theme.ink3)
+                    }
+                }
+                .padding(Spacing.md)
+                
+                Divider()
+                    .padding(.horizontal, Spacing.md)
+                
+                // Installment list (first 3)
+                ForEach(Array(transaction.sortedInstallments.prefix(3).enumerated()), id: \.element.id) { index, installment in
+                    if index > 0 {
+                        Divider()
+                            .padding(.horizontal, Spacing.md)
+                    }
+                    
+                    InstallmentCompactRow(
+                        installment: installment,
+                        onTogglePaid: { toggleInstallmentPaid(installment) }
+                    )
+                }
+                
+                if transaction.installments.count > 3 {
+                    Divider()
+                        .padding(.horizontal, Spacing.md)
+                    
+                    Button {
+                        showingInstallmentsList = true
+                    } label: {
+                        HStack {
+                            Text(String(localized: "View all \(transaction.installments.count) payments"))
+                                .font(.subheadline)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                        }
+                        .foregroundStyle(Color.Theme.accent)
+                        .padding(Spacing.md)
+                    }
+                }
+            }
+            .background(Color.Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        }
+    }
+    
+    private func toggleInstallmentPaid(_ installment: Installment) {
+        do {
+            if installment.isPaid {
+                try LedgerService.markInstallmentUnpaid(installment, in: modelContext)
+            } else {
+                try LedgerService.markInstallmentPaid(installment, in: modelContext)
+            }
+        } catch {
+            print("Failed to toggle installment: \(error)")
         }
     }
     
@@ -381,6 +518,79 @@ private struct TransactionItemRow: View {
             .foregroundStyle(Color.Theme.ink)
         }
         .padding(Spacing.md)
+    }
+}
+
+// MARK: - Installment Compact Row
+
+private struct InstallmentCompactRow: View {
+    let installment: Installment
+    let onTogglePaid: () -> Void
+    
+    var body: some View {
+        HStack(spacing: Spacing.md) {
+            Button {
+                onTogglePaid()
+            } label: {
+                Image(systemName: installment.isPaid ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(installment.isPaid ? Color.Theme.success : statusColor)
+            }
+            .buttonStyle(.plain)
+            
+            Text("#\(installment.sequenceNumber)")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Theme.ink2)
+                .frame(width: 24, alignment: .leading)
+            
+            HStack(spacing: Spacing.xs) {
+                Text(CurrencyFormatter.string(installment.amount))
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .strikethrough(installment.isPaid, color: Color.Theme.ink3)
+                Text(CurrencyFormatter.symbol)
+                    .font(.caption)
+                    .foregroundStyle(Color.Theme.ink3)
+            }
+            .foregroundStyle(Color.Theme.ink)
+            
+            Spacer()
+            
+            VStack(alignment: .trailing, spacing: 2) {
+                if !installment.isPaid {
+                    statusBadge
+                }
+                Text(installment.dueDate, style: .date)
+                    .font(.caption)
+                    .foregroundStyle(Color.Theme.ink3)
+            }
+        }
+        .padding(Spacing.md)
+    }
+    
+    private var statusColor: Color {
+        switch installment.status {
+        case .paid: return Color.Theme.success
+        case .overdue: return Color.Theme.warning
+        case .dueSoon: return Color.Theme.accent
+        case .upcoming: return Color.Theme.ink3
+        }
+    }
+    
+    @ViewBuilder
+    private var statusBadge: some View {
+        let status = installment.status
+        if status == .overdue || status == .dueSoon {
+            Text(status.localizedName)
+                .font(.caption2)
+                .fontWeight(.medium)
+                .foregroundStyle(statusColor)
+                .padding(.horizontal, Spacing.xs)
+                .padding(.vertical, 1)
+                .background(statusColor.opacity(0.15))
+                .clipShape(Capsule())
+        }
     }
 }
 

@@ -377,6 +377,79 @@ enum StatementGenerator {
                 yPosition += 30
             }
             
+            // MARK: - Installments Section
+            if transaction.hasInstallments {
+                let sectionTitleAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 14, weight: .semibold),
+                    .foregroundColor: UIColor.black
+                ]
+                String(localized: "Installments").draw(at: CGPoint(x: margin, y: yPosition), withAttributes: sectionTitleAttributes)
+                yPosition += 25
+                
+                // Summary line
+                let summaryAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 11, weight: .regular),
+                    .foregroundColor: UIColor.darkGray
+                ]
+                let paidCount = transaction.paidInstallmentsCount
+                let totalCount = transaction.installments.count
+                let summaryText = String(localized: "\(paidCount) of \(totalCount) paid") + " • " + String(localized: "Remaining") + ": \(CurrencyFormatter.string(transaction.remainingInstallmentAmount)) \(currency)"
+                summaryText.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: summaryAttributes)
+                yPosition += 20
+                
+                // Table header
+                let headerAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 10, weight: .semibold),
+                    .foregroundColor: UIColor.gray
+                ]
+                
+                String(localized: "#").draw(at: CGPoint(x: margin, y: yPosition), withAttributes: headerAttributes)
+                String(localized: "AMOUNT").draw(at: CGPoint(x: margin + 40, y: yPosition), withAttributes: headerAttributes)
+                String(localized: "DUE DATE").draw(at: CGPoint(x: margin + 140, y: yPosition), withAttributes: headerAttributes)
+                String(localized: "STATUS").draw(at: CGPoint(x: pageWidth - margin - 80, y: yPosition), withAttributes: headerAttributes)
+                yPosition += 18
+                
+                drawLine(in: context.cgContext, from: CGPoint(x: margin, y: yPosition), to: CGPoint(x: pageWidth - margin, y: yPosition), color: .lightGray)
+                yPosition += 8
+                
+                let shortDateFormatter = DateFormatter()
+                shortDateFormatter.dateFormat = "dd MMM yyyy"
+                
+                let rowAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 11, weight: .regular),
+                    .foregroundColor: UIColor.black
+                ]
+                
+                for installment in transaction.sortedInstallments {
+                    // Check if we need a new page
+                    if yPosition > pageHeight - 100 {
+                        context.beginPage()
+                        yPosition = margin
+                    }
+                    
+                    "\(installment.sequenceNumber)".draw(at: CGPoint(x: margin, y: yPosition), withAttributes: rowAttributes)
+                    
+                    let amountStr = "\(CurrencyFormatter.string(installment.amount)) \(currency)"
+                    amountStr.draw(at: CGPoint(x: margin + 40, y: yPosition), withAttributes: rowAttributes)
+                    
+                    let dateStr = shortDateFormatter.string(from: installment.dueDate)
+                    dateStr.draw(at: CGPoint(x: margin + 140, y: yPosition), withAttributes: rowAttributes)
+                    
+                    let statusColor: UIColor = installment.isPaid ? .systemGreen : (installment.isOverdue ? .systemOrange : .darkGray)
+                    let statusAttributes: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.systemFont(ofSize: 11, weight: .medium),
+                        .foregroundColor: statusColor
+                    ]
+                    let statusText = installment.status.localizedName
+                    let statusSize = statusText.size(withAttributes: statusAttributes)
+                    statusText.draw(at: CGPoint(x: pageWidth - margin - statusSize.width, y: yPosition), withAttributes: statusAttributes)
+                    
+                    yPosition += 22
+                }
+                
+                yPosition += 10
+            }
+            
             // MARK: - Note
             if let note = transaction.note, !note.isEmpty {
                 yPosition += 10

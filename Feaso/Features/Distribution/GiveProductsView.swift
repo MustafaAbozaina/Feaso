@@ -17,6 +17,12 @@ struct GiveProductsView: View {
     @State private var showingCamera = false
     @State private var showingPhotoLibrary = false
     
+    // Installment setup state
+    @State private var numberOfInstallments: Int = 3
+    @State private var firstDueDate: Date = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+    @State private var installmentInterval: InstallmentInterval = .biweekly
+    @State private var showingInstallmentCustomization = false
+    
     private var newTotal: Decimal {
         lines.reduce(Decimal(0)) { $0 + $1.lineTotal }
     }
@@ -110,6 +116,14 @@ struct GiveProductsView: View {
         .sheet(isPresented: $showingPhotoLibrary) {
             ImagePicker(image: $attachedImage, sourceType: .photoLibrary)
         }
+        .sheet(isPresented: $showingInstallmentCustomization) {
+            InstallmentSetupView(
+                totalAmount: newTotal,
+                numberOfInstallments: $numberOfInstallments,
+                firstDueDate: $firstDueDate,
+                interval: $installmentInterval
+            )
+        }
     }
     
     // MARK: - Cart List
@@ -125,6 +139,18 @@ struct GiveProductsView: View {
                 ))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+            
+            if paymentType == .installment {
+                installmentSetupSection
+                    .listRowInsets(EdgeInsets(
+                        top: Spacing.sm,
+                        leading: Spacing.lg,
+                        bottom: Spacing.sm,
+                        trailing: Spacing.lg
+                    ))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
             
             ForEach(lines) { line in
                 CartItemCard(
@@ -193,6 +219,130 @@ struct GiveProductsView: View {
         .onChange(of: paymentType) { _, newValue in
             updateAllLinesPaymentType(to: newValue)
         }
+    }
+    
+    private var installmentSetupSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Text(String(localized: "Installment Schedule"))
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Theme.ink2)
+            
+            // Number of installments
+            HStack {
+                Text(String(localized: "Number of Payments"))
+                    .font(.body)
+                    .foregroundStyle(Color.Theme.ink)
+                Spacer()
+                Stepper("\(numberOfInstallments)", value: $numberOfInstallments, in: 2...12)
+                    .labelsHidden()
+                Text("\(numberOfInstallments)")
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.Theme.ink)
+                    .frame(minWidth: 24)
+            }
+            
+            Divider()
+            
+            // First due date
+            HStack {
+                Text(String(localized: "First Payment Due"))
+                    .font(.body)
+                    .foregroundStyle(Color.Theme.ink)
+                Spacer()
+                DatePicker("", selection: $firstDueDate, displayedComponents: .date)
+                    .labelsHidden()
+            }
+            
+            Divider()
+            
+            // Interval
+            HStack {
+                Text(String(localized: "Payment Interval"))
+                    .font(.body)
+                    .foregroundStyle(Color.Theme.ink)
+                Spacer()
+                Menu {
+                    ForEach(InstallmentInterval.allCases) { interval in
+                        Button(interval.localizedName) {
+                            installmentInterval = interval
+                        }
+                    }
+                } label: {
+                    HStack(spacing: Spacing.xs) {
+                        Text(installmentInterval.localizedName)
+                            .font(.body)
+                            .foregroundStyle(Color.Theme.accent)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption)
+                            .foregroundStyle(Color.Theme.accent)
+                    }
+                }
+            }
+            
+            Divider()
+            
+            // Preview
+            installmentPreview
+            
+            // Customize button
+            Button {
+                showingInstallmentCustomization = true
+            } label: {
+                HStack {
+                    Image(systemName: "slider.horizontal.3")
+                    Text(String(localized: "Customize Amounts"))
+                }
+                .font(.subheadline)
+                .foregroundStyle(Color.Theme.accent)
+            }
+        }
+        .padding(Spacing.md)
+        .background(Color.Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+    }
+    
+    private var installmentPreview: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text(String(localized: "Preview"))
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.Theme.ink3)
+            
+            let installmentAmount = newTotal / Decimal(numberOfInstallments)
+            let calendar = Calendar.current
+            
+            ForEach(0..<min(numberOfInstallments, 3), id: \.self) { index in
+                let dueDate = calendar.date(byAdding: .day, value: installmentInterval.rawValue * index, to: firstDueDate) ?? firstDueDate
+                HStack {
+                    Text("\(index + 1).")
+                        .font(.caption)
+                        .foregroundStyle(Color.Theme.ink3)
+                        .frame(width: 20, alignment: .leading)
+                    Text(CurrencyFormatter.string(installmentAmount))
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.Theme.ink)
+                    Text(CurrencyFormatter.symbol)
+                        .font(.caption2)
+                        .foregroundStyle(Color.Theme.ink3)
+                    Spacer()
+                    Text(dueDate, style: .date)
+                        .font(.caption)
+                        .foregroundStyle(Color.Theme.ink2)
+                }
+            }
+            
+            if numberOfInstallments > 3 {
+                Text(String(localized: "+\(numberOfInstallments - 3) more payments"))
+                    .font(.caption)
+                    .foregroundStyle(Color.Theme.ink3)
+            }
+        }
+        .padding(Spacing.sm)
+        .background(Color.Theme.surface2)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
     }
     
     private var attachmentSection: some View {
@@ -306,12 +456,23 @@ struct GiveProductsView: View {
             attachmentFileName = ImageAttachmentService.saveImage(image, for: transactionId)
         }
         
+        // Create installment config if payment type is installment
+        var installmentConfig: LedgerService.InstallmentConfig? = nil
+        if paymentType == .installment {
+            installmentConfig = LedgerService.InstallmentConfig(
+                numberOfInstallments: numberOfInstallments,
+                firstDueDate: firstDueDate,
+                interval: installmentInterval
+            )
+        }
+        
         let items = lines.map { ($0.product, $0.quantity) }
         do {
             try LedgerService.recordDistribution(
                 to: salesman,
                 items: items,
                 paymentType: paymentType,
+                installmentConfig: installmentConfig,
                 attachmentFileName: attachmentFileName,
                 in: modelContext
             )

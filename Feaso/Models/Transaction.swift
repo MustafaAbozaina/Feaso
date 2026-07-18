@@ -21,6 +21,9 @@ final class Transaction {
     @Relationship(deleteRule: .cascade, inverse: \TransactionItem.transaction)
     var items: [TransactionItem] = []
     
+    @Relationship(deleteRule: .cascade, inverse: \Installment.transaction)
+    var installments: [Installment] = []
+    
     var reversedBy: Transaction?
     var reverses: Transaction?
     
@@ -57,4 +60,42 @@ final class Transaction {
     var isReversed: Bool { reversedBy != nil }
     var isReversal: Bool { reverses != nil }
     var hasAttachment: Bool { attachmentFileName != nil }
+    
+    // MARK: - Installment Helpers
+    
+    var hasInstallments: Bool {
+        !installments.isEmpty
+    }
+    
+    var sortedInstallments: [Installment] {
+        installments.sorted { $0.sequenceNumber < $1.sequenceNumber }
+    }
+    
+    var totalInstallmentAmount: Decimal {
+        installments.reduce(Decimal.zero) { $0 + $1.amount }
+    }
+    
+    var paidInstallmentAmount: Decimal {
+        installments.filter { $0.isPaid }.reduce(Decimal.zero) { $0 + $1.amount }
+    }
+    
+    var remainingInstallmentAmount: Decimal {
+        totalInstallmentAmount - paidInstallmentAmount
+    }
+    
+    var paidInstallmentsCount: Int {
+        installments.filter { $0.isPaid }.count
+    }
+    
+    var nextDueInstallment: Installment? {
+        sortedInstallments.first { !$0.isPaid }
+    }
+    
+    var overdueInstallments: [Installment] {
+        installments.filter { $0.isOverdue }
+    }
+    
+    var hasOverdueInstallments: Bool {
+        installments.contains { $0.isOverdue }
+    }
 }

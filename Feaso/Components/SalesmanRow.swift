@@ -14,13 +14,38 @@ struct SalesmanRow: View {
         return daysSinceActivity > 14
     }
     
+    private var overdueInstallmentsCount: Int {
+        salesman.transactions
+            .filter { $0.reversedBy == nil }
+            .flatMap { $0.installments }
+            .filter { $0.isOverdue }
+            .count
+    }
+    
     var body: some View {
         HStack(spacing: Spacing.md) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(salesman.name)
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color.Theme.ink)
+                HStack(spacing: Spacing.sm) {
+                    Text(salesman.name)
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color.Theme.ink)
+                    
+                    if overdueInstallmentsCount > 0 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.caption2)
+                            Text("\(overdueInstallmentsCount)")
+                                .font(.caption2)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundStyle(Color.Theme.warning)
+                        .padding(.horizontal, Spacing.xs)
+                        .padding(.vertical, 2)
+                        .background(Color.Theme.warningBg)
+                        .clipShape(Capsule())
+                    }
+                }
                 
                 if let lastActivity = salesman.lastActivityAt {
                     Text(DateFormatting.relativeString(from: lastActivity))
