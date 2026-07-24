@@ -30,13 +30,7 @@ struct CollectionsView: View {
     @State private var filterMode: Int = 0 // 0 = By Date, 1 = Custom Range
     @State private var selectedPreset: DatePreset = .thisWeek
     @State private var isPresetChange = false // Flag to prevent onChange interference
-    @State private var targetDate: Date = {
-        let calendar = Calendar.current
-        let today = Date()
-        let weekday = calendar.component(.weekday, from: today)
-        let daysUntilEndOfWeek = 7 - weekday
-        return calendar.date(byAdding: .day, value: daysUntilEndOfWeek, to: today) ?? today
-    }()
+    @State private var targetDate: Date = WorkWeekManager.endOfWorkWeek()
     @State private var fromDate: Date = Date()
     @State private var toDate: Date = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
     @State private var showDatePicker = false
@@ -236,11 +230,7 @@ struct CollectionsView: View {
     }
     
     private var endOfWeek: Date {
-        let calendar = Calendar.current
-        let today = Date()
-        let weekday = calendar.component(.weekday, from: today)
-        let daysUntilEndOfWeek = 7 - weekday
-        return calendar.date(byAdding: .day, value: daysUntilEndOfWeek, to: today) ?? today
+        WorkWeekManager.endOfWorkWeek()
     }
     
     private var endOfMonth: Date {

@@ -3,6 +3,8 @@ import SwiftUI
 struct SettingsView: View {
     @Bindable private var settings = SettingsManager.shared
     @State private var showLanguageChangeAlert = false
+    @State private var workWeekStart: Weekday = WorkWeekManager.workWeekStart
+    @State private var workWeekEnd: Weekday = WorkWeekManager.workWeekEnd
     
     var body: some View {
         List {
@@ -50,6 +52,35 @@ struct SettingsView: View {
                 Text("Currency")
                     .font(.custom("SF Pro Text", size: 13, relativeTo: .footnote))
                     .foregroundStyle(Color.Theme.ink2)
+            }
+            
+            // MARK: - Work Week Section
+            Section {
+                Picker(String(localized: "Start Day"), selection: $workWeekStart) {
+                    ForEach(Weekday.allCases) { day in
+                        Text(day.localizedName).tag(day)
+                    }
+                }
+                .onChange(of: workWeekStart) { _, newValue in
+                    WorkWeekManager.workWeekStart = newValue
+                }
+                
+                Picker(String(localized: "End Day"), selection: $workWeekEnd) {
+                    ForEach(Weekday.allCases) { day in
+                        Text(day.localizedName).tag(day)
+                    }
+                }
+                .onChange(of: workWeekEnd) { _, newValue in
+                    WorkWeekManager.workWeekEnd = newValue
+                }
+            } header: {
+                Text("Work Week")
+                    .font(.custom("SF Pro Text", size: 13, relativeTo: .footnote))
+                    .foregroundStyle(Color.Theme.ink2)
+            } footer: {
+                Text("Used to calculate \"This Week\" in Collections.")
+                    .font(.custom("SF Pro Text", size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.Theme.ink3)
             }
         }
         .listStyle(.insetGrouped)

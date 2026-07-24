@@ -319,3 +319,23 @@
 "This will record a payment of %@ %@ and reduce the salesman's balance." = "This will record a payment of %@ %@ and reduce the salesman's balance.";
 "This Month" = "This Month";
 
+// MARK: - Work Week Settings
+"Work Week" = "Work Week";
+"Start Day" = "Start Day";
+"End Day" = "End Day";
+"Used to calculate \"This Week\" in Collections." = "Used to calculate \"This Week\" in Collections.";
+"Sunday" = "Sunday";
+"Monday" = "Monday";
+"Tuesday" = "Tuesday";
+"Wednesday" = "Wednesday";
+"Thursday" = "Thursday";
+"Friday" = "Friday";
+"Saturday" = "Saturday";
+"Sun" = "Sun";
+"Mon" = "Mon";
+"Tue" = "Tue";
+"Wed" = "Wed";
+"Thu" = "Thu";
+"Fri" = "Fri";
+"Sat" = "Sat";
+

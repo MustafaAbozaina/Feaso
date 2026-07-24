@@ -318,3 +318,23 @@
 "This will record a payment of %@ %@ and reduce the salesman's balance." = "سيتم تسجيل دفعة بقيمة %@ %@ وتخفيض رصيد المندوب.";
 "This Month" = "هذا الشهر";
 
+// MARK: - Work Week Settings
+"Work Week" = "أسبوع العمل";
+"Start Day" = "يوم البداية";
+"End Day" = "يوم النهاية";
+"Used to calculate \"This Week\" in Collections." = "يُستخدم لحساب \"هذا الأسبوع\" في التحصيلات.";
+"Sunday" = "الأحد";
+"Monday" = "الإثنين";
+"Tuesday" = "الثلاثاء";
+"Wednesday" = "الأربعاء";
+"Thursday" = "الخميس";
+"Friday" = "الجمعة";
+"Saturday" = "السبت";
+"Sun" = "أحد";
+"Mon" = "إثن";
+"Tue" = "ثلا";
+"Wed" = "أرب";
+"Thu" = "خمي";
+"Fri" = "جمع";
+"Sat" = "سبت";
+

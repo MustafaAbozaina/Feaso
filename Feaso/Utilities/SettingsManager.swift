@@ -74,3 +74,5 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         }
     }
 }
+
+
