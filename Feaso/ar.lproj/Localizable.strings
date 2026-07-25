@@ -338,3 +338,47 @@
 "Fri" = "جمع";
 "Sat" = "سبت";
 
+// MARK: - Authentication
+"Sign In" = "تسجيل الدخول";
+"Sign in to sync your data" = "سجّل دخولك لمزامنة بياناتك";
+"Email" = "البريد الإلكتروني";
+"Password" = "كلمة المرور";
+"Forgot Password?" = "نسيت كلمة المرور؟";
+"Reset Password" = "إعادة تعيين كلمة المرور";
+"Forgot your password?" = "نسيت كلمة المرور؟";
+"Enter your email and we'll send you a link to reset your password." = "أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.";
+"Send Reset Link" = "إرسال رابط الاستعادة";
+"Reset link sent! Check your email." = "تم إرسال الرابط! تحقق من بريدك الإلكتروني.";
+"Invalid email or password" = "البريد الإلكتروني أو كلمة المرور غير صحيحة";
+"No account found with this email" = "لا يوجد حساب مرتبط بهذا البريد الإلكتروني";
+"This email is already registered" = "هذا البريد الإلكتروني مسجل بالفعل";
+"Password must be at least 6 characters" = "يجب أن تكون كلمة المرور 6 أحرف على الأقل";
+"Network error. Please check your connection." = "خطأ في الشبكة. يرجى التحقق من اتصالك.";
+
+// MARK: - Account & Sync
+"Account" = "الحساب";
+"Cloud Sync" = "المزامنة السحابية";
+"Sign in to enable sync" = "سجّل دخولك لتفعيل المزامنة";
+"Signed in as" = "تم تسجيل الدخول كـ";
+"Sign Out" = "تسجيل الخروج";
+"Sign Out?" = "تسجيل الخروج؟";
+"Your data will remain on this device but will stop syncing." = "ستبقى بياناتك على هذا الجهاز ولكن ستتوقف المزامنة.";
+"Loading..." = "جاري التحميل...";
+"Not synced" = "غير متزامن";
+"Syncing..." = "جاري المزامنة...";
+"Synced" = "تمت المزامنة";
+"Sync Error" = "خطأ في المزامنة";
+"Sync error" = "خطأ في المزامنة";
+"Waiting to sync" = "في انتظار المزامنة";
+"Uploading changes..." = "جاري رفع التغييرات...";
+"Last synced %@" = "آخر مزامنة %@";
+"You must be signed in to sync" = "يجب تسجيل الدخول للمزامنة";
+"No business ID found" = "لم يتم العثور على معرف النشاط التجاري";
+"Network error. Changes will sync when connection returns." = "خطأ في الشبكة. ستتم المزامنة عند عودة الاتصال.";
+"Failed to convert data for sync" = "فشل في تحويل البيانات للمزامنة";
+
+// MARK: - User Roles
+"Owner" = "المالك";
+"Manager" = "مدير";
+"Clerk" = "موظف";
+

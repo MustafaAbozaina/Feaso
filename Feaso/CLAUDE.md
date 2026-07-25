@@ -481,6 +481,11 @@ Feaso/
 - Booleans read as questions (`isEmpty`, `hasUnsavedChanges`)
 - Action methods are verbs (`recordPayment()`)
 
+### Debugging
+
+- Use `debugPrint()` instead of `print()` for debug output
+- Remove all debug prints before finalizing features
+
 ### Money & Numbers
 
 - All monetary values: `Decimal` (never `Double`)

@@ -129,6 +129,9 @@ struct SalesmenListView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
+        .refreshable {
+            await SyncService.shared.refresh()
+        }
         .navigationDestination(for: Salesman.self) { salesman in
             SalesmanDetailView(salesman: salesman)
         }

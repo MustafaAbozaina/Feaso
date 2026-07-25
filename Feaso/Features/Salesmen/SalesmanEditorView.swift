@@ -105,10 +105,13 @@ struct SalesmanEditorView: View {
         let trimmedPhone = phone.trimmingCharacters(in: .whitespaces)
         let trimmedNotes = notes.trimmingCharacters(in: .whitespaces)
         
+        let salesmanToSync: Salesman
+        
         if let salesman {
             salesman.name = trimmedName
             salesman.phone = trimmedPhone.isEmpty ? nil : trimmedPhone
             salesman.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
+            salesmanToSync = salesman
         } else {
             let newSalesman = Salesman(
                 name: trimmedName,
@@ -116,9 +119,16 @@ struct SalesmanEditorView: View {
                 notes: trimmedNotes.isEmpty ? nil : trimmedNotes
             )
             modelContext.insert(newSalesman)
+            salesmanToSync = newSalesman
         }
         
         try? modelContext.save()
+        
+        // Sync to Firestore
+        Task {
+            await SyncService.shared.push(salesmanToSync)
+        }
+        
         dismiss()
     }
     
@@ -126,6 +136,12 @@ struct SalesmanEditorView: View {
         guard let salesman else { return }
         salesman.deletedAt = .now
         try? modelContext.save()
+        
+        // Sync deletion to Firestore
+        Task {
+            await SyncService.shared.push(salesman)
+        }
+        
         dismiss()
     }
 }

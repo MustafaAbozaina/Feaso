@@ -130,6 +130,9 @@ struct CollectionsView: View {
                         }
                         .padding(Spacing.md)
                     }
+                    .refreshable {
+                        await SyncService.shared.refresh()
+                    }
                 }
             }
             .background(Color.Theme.background)

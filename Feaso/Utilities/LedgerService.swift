@@ -85,6 +85,11 @@ enum LedgerService {
         }
 
         try context.save()
+        
+        // Sync to Firestore
+        Task {
+            await SyncService.shared.push(transaction)
+        }
     }
     
     // MARK: - Installment Creation
@@ -165,6 +170,11 @@ enum LedgerService {
         }
         
         try context.save()
+        
+        // Sync to Firestore
+        Task {
+            await SyncService.shared.push(transaction)
+        }
     }
     
     /// Marks an installment as paid and creates a payment transaction
@@ -200,6 +210,12 @@ enum LedgerService {
         installment.paymentTransaction = payment
         
         try context.save()
+        
+        // Sync to Firestore
+        Task {
+            await SyncService.shared.push(payment)
+            await SyncService.shared.push(installment)
+        }
     }
     
     /// Marks an installment as unpaid and reverses its payment transaction
@@ -217,6 +233,11 @@ enum LedgerService {
         installment.paidDate = nil
         installment.paymentTransaction = nil
         try context.save()
+        
+        // Sync to Firestore
+        Task {
+            await SyncService.shared.push(installment)
+        }
     }
 
     @MainActor
@@ -251,6 +272,11 @@ enum LedgerService {
         }
 
         try context.save()
+        
+        // Sync to Firestore
+        Task {
+            await SyncService.shared.push(transaction)
+        }
     }
 
     @MainActor
@@ -272,6 +298,11 @@ enum LedgerService {
         )
         context.insert(transaction)
         try context.save()
+        
+        // Sync to Firestore
+        Task {
+            await SyncService.shared.push(transaction)
+        }
     }
 
     @MainActor
@@ -318,6 +349,11 @@ enum LedgerService {
         }
 
         try context.save()
+        
+        // Sync to Firestore
+        Task {
+            await SyncService.shared.push(transaction)
+        }
     }
 
     @MainActor
@@ -343,6 +379,12 @@ enum LedgerService {
         original.reversedBy = reversal
         context.insert(reversal)
         try context.save()
+        
+        // Sync to Firestore
+        Task {
+            await SyncService.shared.push(reversal)
+            await SyncService.shared.push(original)
+        }
     }
 
     // MARK: - Return Valuation

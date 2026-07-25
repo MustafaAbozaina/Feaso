@@ -216,6 +216,8 @@ struct ProductEditorView: View {
         let openingStock = Int(openingStockText) ?? 0
         let reorderThreshold = Int(reorderThresholdText)
         
+        let productToSync: Product
+        
         if let product {
             product.name = trimmedName
             product.costPrice = costPrice
@@ -223,6 +225,7 @@ struct ProductEditorView: View {
             product.installmentPrice = installmentPrice
             product.openingStock = openingStock
             product.reorderThreshold = reorderThreshold
+            productToSync = product
         } else {
             let newProduct = Product(
                 name: trimmedName,
@@ -233,9 +236,16 @@ struct ProductEditorView: View {
                 reorderThreshold: reorderThreshold
             )
             modelContext.insert(newProduct)
+            productToSync = newProduct
         }
         
         try? modelContext.save()
+        
+        // Sync to Firestore
+        Task {
+            await SyncService.shared.push(productToSync)
+        }
+        
         dismiss()
     }
     
@@ -243,6 +253,12 @@ struct ProductEditorView: View {
         guard let product else { return }
         product.deletedAt = .now
         try? modelContext.save()
+        
+        // Sync deletion to Firestore
+        Task {
+            await SyncService.shared.push(product)
+        }
+        
         dismiss()
     }
 }

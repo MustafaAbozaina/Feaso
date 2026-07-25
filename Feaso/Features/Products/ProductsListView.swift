@@ -108,6 +108,9 @@ struct ProductsListView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
+        .refreshable {
+            await SyncService.shared.refresh()
+        }
     }
 }
 

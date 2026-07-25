@@ -339,3 +339,47 @@
 "Fri" = "Fri";
 "Sat" = "Sat";
 
+// MARK: - Authentication
+"Sign In" = "Sign In";
+"Sign in to sync your data" = "Sign in to sync your data";
+"Email" = "Email";
+"Password" = "Password";
+"Forgot Password?" = "Forgot Password?";
+"Reset Password" = "Reset Password";
+"Forgot your password?" = "Forgot your password?";
+"Enter your email and we'll send you a link to reset your password." = "Enter your email and we'll send you a link to reset your password.";
+"Send Reset Link" = "Send Reset Link";
+"Reset link sent! Check your email." = "Reset link sent! Check your email.";
+"Invalid email or password" = "Invalid email or password";
+"No account found with this email" = "No account found with this email";
+"This email is already registered" = "This email is already registered";
+"Password must be at least 6 characters" = "Password must be at least 6 characters";
+"Network error. Please check your connection." = "Network error. Please check your connection.";
+
+// MARK: - Account & Sync
+"Account" = "Account";
+"Cloud Sync" = "Cloud Sync";
+"Sign in to enable sync" = "Sign in to enable sync";
+"Signed in as" = "Signed in as";
+"Sign Out" = "Sign Out";
+"Sign Out?" = "Sign Out?";
+"Your data will remain on this device but will stop syncing." = "Your data will remain on this device but will stop syncing.";
+"Loading..." = "Loading...";
+"Not synced" = "Not synced";
+"Syncing..." = "Syncing...";
+"Synced" = "Synced";
+"Sync Error" = "Sync Error";
+"Sync error" = "Sync error";
+"Waiting to sync" = "Waiting to sync";
+"Uploading changes..." = "Uploading changes...";
+"Last synced %@" = "Last synced %@";
+"You must be signed in to sync" = "You must be signed in to sync";
+"No business ID found" = "No business ID found";
+"Network error. Changes will sync when connection returns." = "Network error. Changes will sync when connection returns.";
+"Failed to convert data for sync" = "Failed to convert data for sync";
+
+// MARK: - User Roles
+"Owner" = "Owner";
+"Manager" = "Manager";
+"Clerk" = "Clerk";
+
