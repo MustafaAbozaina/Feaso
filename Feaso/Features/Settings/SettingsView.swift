@@ -2,12 +2,45 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable private var settings = SettingsManager.shared
+    private var authService = AuthService.shared
     @State private var showLanguageChangeAlert = false
+    @State private var showSignOutConfirmation = false
     @State private var workWeekStart: Weekday = WorkWeekManager.workWeekStart
     @State private var workWeekEnd: Weekday = WorkWeekManager.workWeekEnd
     
     var body: some View {
         List {
+            // MARK: - Account Section
+            Section {
+                SyncStatusRow()
+                
+                if authService.isAuthenticated {
+                    if let email = authService.email {
+                        HStack {
+                            Text(String(localized: "Signed in as"))
+                            Spacer()
+                            Text(email)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    
+                    Button(role: .destructive) {
+                        showSignOutConfirmation = true
+                    } label: {
+                        HStack {
+                            Text(String(localized: "Sign Out"))
+                            Spacer()
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                        }
+                    }
+                }
+            } header: {
+                Text("Account")
+                    .font(.custom("SF Pro Text", size: 13, relativeTo: .footnote))
+                    .foregroundStyle(Color.Theme.ink2)
+            }
+            
             // MARK: - Language Section
             Section {
                 ForEach(AppLanguage.allCases) { language in
@@ -91,6 +124,22 @@ struct SettingsView: View {
             Button(String(localized: "OK"), role: .cancel) { }
         } message: {
             Text("Please restart the app for the language change to take effect.")
+        }
+        .alert(String(localized: "Sign Out?"), isPresented: $showSignOutConfirmation) {
+            Button(String(localized: "Cancel"), role: .cancel) { }
+            Button(String(localized: "Sign Out"), role: .destructive) {
+                signOut()
+            }
+        } message: {
+            Text("Your data will remain on this device but will stop syncing.")
+        }
+    }
+    
+    private func signOut() {
+        do {
+            try authService.signOut()
+        } catch {
+            // Error handling - user stays signed in
         }
     }
     

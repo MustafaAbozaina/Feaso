@@ -1,11 +1,15 @@
 import SwiftUI
 import SwiftData
+import FirebaseCore
 
 @main
 struct FeasoApp: App {
     let modelContainer: ModelContainer
     
     init() {
+        // Initialize Firebase
+        FirebaseApp.configure()
+        
         do {
             let container = try ModelContainer(for: 
                 Salesman.self,
@@ -16,10 +20,13 @@ struct FeasoApp: App {
             )
             self.modelContainer = container
             
+            // Configure sync service with model context
+            SyncService.shared.configure(with: container.mainContext)
+            
             #if DEBUG
-            Task { @MainActor in
-                try? PreviewSeed.populateIfEmpty(container.mainContext)
-            }
+//            Task { @MainActor in
+//                try? PreviewSeed.populateIfEmpty(container.mainContext)
+//            }
             #endif
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
