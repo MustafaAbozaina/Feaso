@@ -1,11 +1,13 @@
 import Foundation
 import FirebaseAuth
+import FirebaseFirestore
 import Observation
 
 // MARK: - Firebase Auth Provider Implementation
 
 /// Firebase implementation of AuthProvider protocol.
 /// This class handles all Firebase-specific authentication logic.
+/// After authentication, fetches user profile from /users/{uid} to get businessId and role.
 @Observable
 final class FirebaseAuthProvider: AuthProvider {
     
@@ -25,6 +27,7 @@ final class FirebaseAuthProvider: AuthProvider {
     
     private var authStateListener: AuthStateDidChangeListenerHandle?
     private var firebaseUser: User?
+    private let db = Firestore.firestore()
     
     // MARK: - Init
     
@@ -102,34 +105,113 @@ final class FirebaseAuthProvider: AuthProvider {
             return
         }
         
+        print("🔐 [AUTH] refreshClaims() for user: \(user.uid)")
+        
         do {
-            // Force refresh to get latest claims
-            let tokenResult = try await user.getIDTokenResult(forcingRefresh: true)
+            // First, try to fetch user profile from Firestore /users/{uid}
+            let userDoc = try await db.collection("users").document(user.uid).getDocument()
+            print("🔐 [AUTH] User doc exists: \(userDoc.exists)")
             
-            // Extract businessId - for MVP, use uid as businessId
-            if let bizId = tokenResult.claims["businessId"] as? String {
-                self.businessId = bizId
+            if userDoc.exists {
+                // Document exists - try to decode it
+                do {
+                    let firestoreUser = try userDoc.data(as: FirestoreUser.self)
+                    // User document decoded successfully - use businessId and role from Firestore
+                    self.businessId = firestoreUser.businessId
+                    print("🔐 [AUTH] ✅ Got businessId from user doc: \(firestoreUser.businessId)")
+                    if let role = UserRole(rawValue: firestoreUser.role) {
+                        self.userRole = role
+                    } else {
+                        self.userRole = .clerk // Default to clerk if unknown role
+                    }
+                } catch {
+                    // Document exists but failed to decode - log error and use fallback
+                    print("⚠️ [AUTH] Failed to decode user document: \(error)")
+                    // Try to extract businessId directly from document data
+                    let data = userDoc.data()
+                    print("🔐 [AUTH] Raw document data keys: \(String(describing: data?.keys))")
+                    
+                    // Try to find businessId - check for common key variations
+                    var bizId: String?
+                    if let data {
+                        // Try exact match first
+                        bizId = data["businessId"] as? String
+                        // If not found, search for any key containing "business" (handles invisible chars)
+                        if bizId == nil {
+                            for (key, value) in data {
+                                if key.lowercased().contains("business") && key.lowercased().contains("id") {
+                                    bizId = value as? String
+                                    print("🔐 [AUTH] Found businessId with key '\(key)': \(bizId ?? "nil")")
+                                    break
+                                }
+                            }
+                        }
+                    }
+                    
+                    if let bizId {
+                        self.businessId = bizId
+                        print("🔐 [AUTH] ✅ Got businessId from raw data: \(bizId)")
+                        if let data,
+                           let roleStr = data["role"] as? String,
+                           let role = UserRole(rawValue: roleStr) {
+                            self.userRole = role
+                        } else {
+                            self.userRole = .owner
+                        }
+                    } else {
+                        // Can't read businessId - DO NOT use uid as fallback
+                        // Leave businessId as nil to prevent creating wrong business
+                        print("❌ [AUTH] Could not read businessId from user doc - leaving nil")
+                        self.businessId = nil
+                        self.userRole = nil
+                    }
+                }
             } else {
-                // Fallback: use user's uid as businessId (single owner mode)
-                self.businessId = user.uid
-            }
-            
-            // Extract role - default to owner for MVP
-            if let roleString = tokenResult.claims["role"] as? String,
-               let role = UserRole(rawValue: roleString) {
-                self.userRole = role
-            } else {
-                // Default to owner if no role claim (MVP single owner)
-                self.userRole = .owner
+                // No user document exists - this is a new user, create business and user doc
+                print("🔐 [AUTH] No user doc - creating new business for user")
+                try await setupNewUserBusiness(user: user)
             }
             
         } catch {
-            // If claims fail, still allow access with defaults (offline support)
-            self.businessId = user.uid
-            self.userRole = .owner
+            // Network error fetching user doc
+            print("❌ [AUTH] Error fetching user doc: \(error)")
+            // DO NOT fallback to uid - leave businessId nil and retry later
+            self.businessId = nil
+            self.userRole = nil
         }
         
         isLoading = false
+        print("🔐 [AUTH] Final businessId: \(self.businessId ?? "nil")")
+    }
+    
+    // MARK: - New User Setup
+    
+    /// Creates a new business and user document for first-time users.
+    /// This sets up the multi-user business structure automatically.
+    private func setupNewUserBusiness(user: User) async throws {
+        // Generate a new business ID
+        let businessRef = db.collection("businesses").document()
+        let newBusinessId = businessRef.documentID
+        
+        // Create the business document
+        let business = FirestoreBusiness(
+            name: "My Business", // Default name, user can change later
+            ownerId: user.uid
+        )
+        try businessRef.setData(from: business)
+        
+        // Create the user document linked to this business
+        let firestoreUser = FirestoreUser(
+            email: user.email,
+            displayName: user.displayName,
+            businessId: newBusinessId,
+            role: UserRole.owner.rawValue
+        )
+        try db.collection("users").document(user.uid).setData(from: firestoreUser)
+        
+        // Update local state
+        self.businessId = newBusinessId
+        self.userRole = .owner
     }
     
     // MARK: - Error Mapping

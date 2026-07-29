@@ -86,9 +86,11 @@ enum LedgerService {
 
         try context.save()
         
-        // Sync to Firestore
+        // Sync to Firestore - capture the transaction while still on main actor
+        // to ensure relationships are properly resolved
+        let transactionToSync = transaction
         Task {
-            await SyncService.shared.push(transaction)
+            await SyncService.shared.push(transactionToSync)
         }
     }
     
@@ -465,6 +467,26 @@ enum LedgerService {
         }
 
         return result
+    }
+}
+
+// MARK: - Data Management
+
+extension LedgerService {
+    
+    /// Clears all local data from SwiftData.
+    /// Call this when user logs out or switches to a different business.
+    @MainActor
+    static func clearAllData(in context: ModelContext) {
+        // Delete in order to respect relationships
+        // First delete items that reference other entities
+        try? context.delete(model: TransactionItem.self)
+        try? context.delete(model: Installment.self)
+        try? context.delete(model: Transaction.self)
+        try? context.delete(model: Product.self)
+        try? context.delete(model: Salesman.self)
+        
+        try? context.save()
     }
 }
 

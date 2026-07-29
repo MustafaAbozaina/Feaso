@@ -111,22 +111,78 @@ final class FirebasePullSyncProvider: SyncProvider {
             throw SyncError.noBusinessId
         }
         
+        // Capture ALL data on main actor to ensure relationships are resolved
+        let transactionData = await MainActor.run {
+            (
+                id: transaction.id,
+                typeRaw: transaction.typeRaw,
+                amount: transaction.amount,
+                occurredAt: transaction.occurredAt,
+                note: transaction.note,
+                createdAt: transaction.createdAt,
+                attachmentFileName: transaction.attachmentFileName,
+                paymentTypeRaw: transaction.paymentTypeRaw,
+                salesmanId: transaction.salesman?.id.uuidString,
+                reversedById: transaction.reversedBy?.id.uuidString,
+                reversesId: transaction.reverses?.id.uuidString,
+                items: transaction.items.map { item in
+                    (id: item.id, productId: item.product?.id.uuidString ?? "", quantity: item.quantity, unitPrice: item.unitPrice)
+                },
+                installments: transaction.installments.map { inst in
+                    (id: inst.id, sequenceNumber: inst.sequenceNumber, amount: inst.amount, dueDate: inst.dueDate,
+                     isPaid: inst.isPaid, paidDate: inst.paidDate, note: inst.note, createdAt: inst.createdAt,
+                     paymentTransactionId: inst.paymentTransaction?.id.uuidString)
+                }
+            )
+        }
+        
+        // Build Firestore transaction model from captured data
+        let firestoreTransaction = FirestoreTransaction(
+            id: transactionData.id.uuidString,
+            typeRaw: transactionData.typeRaw,
+            amount: "\(transactionData.amount)",
+            occurredAt: transactionData.occurredAt,
+            note: transactionData.note,
+            createdAt: transactionData.createdAt,
+            attachmentFileName: transactionData.attachmentFileName,
+            paymentTypeRaw: transactionData.paymentTypeRaw,
+            salesmanId: transactionData.salesmanId,
+            reversedById: transactionData.reversedById,
+            reversesId: transactionData.reversesId
+        )
+        
         // Push transaction
-        let firestoreTransaction = FirestoreTransaction(from: transaction)
-        try transactionsCollection.document(transaction.id.uuidString)
+        try transactionsCollection.document(transactionData.id.uuidString)
             .setData(from: firestoreTransaction)
         
         // Push associated items
-        for item in transaction.items {
-            let firestoreItem = FirestoreTransactionItem(from: item, transactionId: transaction.id)
+        for item in transactionData.items {
+            let firestoreItem = FirestoreTransactionItem(
+                id: item.id.uuidString,
+                quantity: item.quantity,
+                unitPrice: "\(item.unitPrice)",
+                transactionId: transactionData.id.uuidString,
+                productId: item.productId
+            )
             try itemsCollection.document(item.id.uuidString)
                 .setData(from: firestoreItem)
         }
         
         // Push associated installments
-        for installment in transaction.installments {
-            let firestoreInstallment = FirestoreInstallment(from: installment)
-            try installmentsCollection.document(installment.id.uuidString)
+        for inst in transactionData.installments {
+            let firestoreInstallment = FirestoreInstallment(
+                id: inst.id.uuidString,
+                sequenceNumber: inst.sequenceNumber,
+                amount: "\(inst.amount)",
+                dueDate: inst.dueDate,
+                isPaid: inst.isPaid,
+                paidDate: inst.paidDate,
+                note: inst.note,
+                createdAt: inst.createdAt,
+                transactionId: transactionData.id.uuidString,
+                paymentTransactionId: inst.paymentTransactionId
+            )
+            try installmentsCollection.document(inst.id.uuidString)
                 .setData(from: firestoreInstallment)
         }
     }
@@ -225,19 +281,24 @@ final class FirebasePullSyncProvider: SyncProvider {
         if let collection = businessCollection("transactions") {
             let snapshot = try await collection.getDocuments()
             for doc in snapshot.documents {
-                if let firestoreTransaction = try? doc.data(as: FirestoreTransaction.self) {
+                do {
+                    let firestoreTransaction = try doc.data(as: FirestoreTransaction.self)
                     guard let uuid = UUID(uuidString: firestoreTransaction.id) else { continue }
                     
                     await MainActor.run {
                         if existingTransactionIds.contains(uuid) {
-                            // Already exists, just add to map
+                            // Already exists - update salesman relationship if needed
                             if let existing = fetchLocal(Transaction.self, id: uuid, in: context) {
+                                if let salesmanId = firestoreTransaction.salesmanId,
+                                   let salesman = salesmenMap[salesmanId],
+                                   existing.salesman?.id.uuidString != salesmanId {
+                                    existing.salesman = salesman
+                                }
                                 transactionsMap[firestoreTransaction.id] = existing
                             }
                         } else {
                             // Insert new
                             let transaction = firestoreTransaction.toTransaction()
-                            // Link salesman if exists
                             if let salesmanId = firestoreTransaction.salesmanId,
                                let salesman = salesmenMap[salesmanId] {
                                 transaction.salesman = salesman
@@ -246,6 +307,8 @@ final class FirebasePullSyncProvider: SyncProvider {
                             transactionsMap[firestoreTransaction.id] = transaction
                         }
                     }
+                } catch {
+                    // Silently skip malformed documents
                 }
             }
         }
@@ -263,7 +326,8 @@ final class FirebasePullSyncProvider: SyncProvider {
         if let collection = businessCollection("transactionItems") {
             let snapshot = try await collection.getDocuments()
             for doc in snapshot.documents {
-                if let firestoreItem = try? doc.data(as: FirestoreTransactionItem.self) {
+                do {
+                    let firestoreItem = try doc.data(as: FirestoreTransactionItem.self)
                     guard let uuid = UUID(uuidString: firestoreItem.id) else { continue }
                     guard !existingItemIds.contains(uuid) else { continue }
                     
@@ -277,6 +341,8 @@ final class FirebasePullSyncProvider: SyncProvider {
                         }
                         context.insert(item)
                     }
+                } catch {
+                    // Silently skip malformed documents
                 }
             }
         }
@@ -285,7 +351,8 @@ final class FirebasePullSyncProvider: SyncProvider {
         if let collection = businessCollection("installments") {
             let snapshot = try await collection.getDocuments()
             for doc in snapshot.documents {
-                if let firestoreInstallment = try? doc.data(as: FirestoreInstallment.self) {
+                do {
+                    let firestoreInstallment = try doc.data(as: FirestoreInstallment.self)
                     guard let uuid = UUID(uuidString: firestoreInstallment.id) else { continue }
                     
                     await MainActor.run {
@@ -308,6 +375,8 @@ final class FirebasePullSyncProvider: SyncProvider {
                             context.insert(installment)
                         }
                     }
+                } catch {
+                    // Silently skip malformed documents
                 }
             }
         }

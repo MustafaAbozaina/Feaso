@@ -1,9 +1,14 @@
 import SwiftUI
+import SwiftData
 
 struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var modelContext
     private var authService = AuthService.shared
     private var syncService = SyncService.shared
+    
+    /// Track the previous businessId to detect changes
+    @State private var previousBusinessId: String?
     
     /// Show loading if auth is loading OR if we're doing initial sync
     private var isLoading: Bool {
@@ -23,10 +28,19 @@ struct RootView: View {
         .onChange(of: authService.isAuthenticated) { _, isAuthenticated in
             if !isAuthenticated {
                 SyncService.shared.stopSync()
+                // Clear local data on logout to prevent data leakage between businesses
+                LedgerService.clearAllData(in: modelContext)
+                previousBusinessId = nil
             }
         }
-        .onChange(of: authService.businessId) { _, businessId in
-            if let businessId, !businessId.isEmpty {
+        .onChange(of: authService.businessId) { oldValue, newValue in
+            // If businessId changed (user switched businesses), clear old data first
+            if let oldBizId = oldValue, let newBizId = newValue, oldBizId != newBizId {
+                LedgerService.clearAllData(in: modelContext)
+            }
+            
+            if let businessId = newValue, !businessId.isEmpty {
+                previousBusinessId = businessId
                 SyncService.shared.startSync()
             }
         }

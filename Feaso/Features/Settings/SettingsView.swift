@@ -12,8 +12,6 @@ struct SettingsView: View {
         List {
             // MARK: - Account Section
             Section {
-                SyncStatusRow()
-                
                 if authService.isAuthenticated {
                     if let email = authService.email {
                         HStack {

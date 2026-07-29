@@ -23,11 +23,6 @@ struct FeasoApp: App {
             // Configure sync service with model context
             SyncService.shared.configure(with: container.mainContext)
             
-            #if DEBUG
-//            Task { @MainActor in
-//                try? PreviewSeed.populateIfEmpty(container.mainContext)
-//            }
-            #endif
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
