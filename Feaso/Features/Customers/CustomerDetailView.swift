@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-struct SalesmanDetailView: View {
-    @Bindable var salesman: Salesman
+struct CustomerDetailView: View {
+    @Bindable var customer: Customer
     
     @State private var showingEditSheet = false
     @State private var showingStatementSheet = false
@@ -13,19 +13,19 @@ struct SalesmanDetailView: View {
     @State private var navigateToInstallments = false
     
     private var sortedTransactions: [Transaction] {
-        salesman.transactions.sorted { $0.occurredAt > $1.occurredAt }
+        customer.transactions.sorted { $0.occurredAt > $1.occurredAt }
     }
     
     private var hasActivity: Bool {
-        !salesman.transactions.isEmpty
+        !customer.transactions.isEmpty
     }
     
     private var hasInstallments: Bool {
-        salesman.transactions.contains { $0.hasInstallments && $0.reversedBy == nil }
+        customer.transactions.contains { $0.hasInstallments && $0.reversedBy == nil }
     }
     
     private var unpaidInstallmentsCount: Int {
-        salesman.transactions
+        customer.transactions
             .filter { $0.reversedBy == nil }
             .flatMap { $0.installments }
             .filter { !$0.isPaid }
@@ -53,7 +53,7 @@ struct SalesmanDetailView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .background(Color.Theme.background)
-        .navigationTitle(salesman.name)
+        .navigationTitle(customer.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -73,26 +73,26 @@ struct SalesmanDetailView: View {
         }
         .sheet(isPresented: $showingEditSheet) {
             NavigationStack {
-                SalesmanEditorView(salesman: salesman)
+                CustomerEditorView(customer: customer)
             }
         }
         .sheet(isPresented: $showingStatementSheet) {
-            StatementPreviewView(salesman: salesman)
+            StatementPreviewView(customer: customer)
         }
         .navigationDestination(isPresented: $navigateToGiveProducts) {
-            GiveProductsView(salesman: salesman)
+            GiveProductsView(customer: customer)
         }
         .navigationDestination(isPresented: $navigateToRecordPayment) {
-            RecordPaymentView(salesman: salesman)
+            RecordPaymentView(customer: customer)
         }
         .navigationDestination(isPresented: $navigateToReturnProducts) {
-            ReturnProductsView(salesman: salesman)
+            ReturnProductsView(customer: customer)
         }
         .navigationDestination(item: $selectedTransaction) { transaction in
             TransactionDetailView(transaction: transaction)
         }
         .navigationDestination(isPresented: $navigateToInstallments) {
-            InstallmentsListView(salesman: salesman)
+            InstallmentsListView(customer: customer)
         }
     }
     
@@ -101,8 +101,8 @@ struct SalesmanDetailView: View {
     private var balanceSection: some View {
         Section {
             BalanceHeroCard(
-                balance: salesman.balance,
-                isSettled: salesman.isSettled
+                balance: customer.balance,
+                isSettled: customer.isSettled
             )
             .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)
@@ -156,7 +156,7 @@ struct SalesmanDetailView: View {
                             Spacer()
                             Image(systemName: "arrow.right.circle.fill")
                                 .foregroundStyle(.white)
-                            Text(String(localized: "Gave products"))
+                            Text(String(localized: "Sell products"))
                                 .font(.subheadline)
                                 .minimumScaleFactor(0.75)
                             Spacer()
@@ -234,7 +234,7 @@ struct SalesmanDetailView: View {
                 Text(String(localized: "No activity yet"))
                     .font(.subheadline)
                     .foregroundStyle(Color.Theme.ink2)
-                Text(String(localized: "Record a distribution or payment to begin."))
+                Text(String(localized: "Record a sale or payment to begin."))
                     .font(.caption)
                     .foregroundStyle(Color.Theme.ink3)
             }
@@ -247,10 +247,10 @@ struct SalesmanDetailView: View {
 
 #Preview {
     NavigationStack {
-        SalesmanDetailView(salesman: {
-            let s = Salesman(name: "Ahmed", phone: "+201001234567")
-            return s
+        CustomerDetailView(customer: {
+            let c = Customer(name: "Ahmed", phone: "+201001234567")
+            return c
         }())
     }
-    .modelContainer(for: [Salesman.self, Product.self, Transaction.self, TransactionItem.self])
+    .modelContainer(for: [Customer.self, Product.self, Transaction.self, TransactionItem.self])
 }

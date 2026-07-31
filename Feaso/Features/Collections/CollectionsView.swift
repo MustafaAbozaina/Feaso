@@ -78,13 +78,13 @@ struct CollectionsView: View {
         }.sorted { $0.dueDate < $1.dueDate }
     }
     
-    // MARK: - Grouped by Salesman
+    // MARK: - Grouped by Customer
     
-    private func groupBySalesman(_ installments: [Installment]) -> [(Salesman, [Installment])] {
-        let grouped = Dictionary(grouping: installments) { $0.transaction?.salesman }
-        return grouped.compactMap { (salesman, installments) -> (Salesman, [Installment])? in
-            guard let salesman = salesman else { return nil }
-            return (salesman, installments.sorted { $0.dueDate < $1.dueDate })
+    private func groupByCustomer(_ installments: [Installment]) -> [(Customer, [Installment])] {
+        let grouped = Dictionary(grouping: installments) { $0.transaction?.customer }
+        return grouped.compactMap { (customer, installments) -> (Customer, [Installment])? in
+            guard let customer = customer else { return nil }
+            return (customer, installments.sorted { $0.dueDate < $1.dueDate })
         }.sorted { $0.0.name < $1.0.name }
     }
     
@@ -102,8 +102,8 @@ struct CollectionsView: View {
         dueInstallments.reduce(0) { $0 + $1.amount }
     }
     
-    private var uniqueSalesmenCount: Int {
-        Set(filteredInstallments.compactMap { $0.transaction?.salesman?.id }).count
+    private var uniqueCustomersCount: Int {
+        Set(filteredInstallments.compactMap { $0.transaction?.customer?.id }).count
     }
     
     // MARK: - Body
@@ -263,7 +263,7 @@ struct CollectionsView: View {
                     .foregroundStyle(Color.Theme.ink3)
             }
             
-            Text(String(localized: "from %lld salesmen · %lld payments", defaultValue: "from \(uniqueSalesmenCount) salesmen · \(filteredInstallments.count) payments"))
+            Text(String(localized: "from %lld customers · %lld payments", defaultValue: "from \(uniqueCustomersCount) customers · \(filteredInstallments.count) payments"))
                 .font(.caption)
                 .foregroundStyle(Color.Theme.ink3)
         }
@@ -296,10 +296,10 @@ struct CollectionsView: View {
             .padding(.horizontal, Spacing.md)
             .padding(.top, Spacing.md)
             
-            // Grouped by salesman
-            ForEach(groupBySalesman(overdueInstallments), id: \.0.id) { salesman, installments in
-                SalesmanInstallmentsCard(
-                    salesman: salesman,
+            // Grouped by customer
+            ForEach(groupByCustomer(overdueInstallments), id: \.0.id) { customer, installments in
+                CustomerInstallmentsCard(
+                    customer: customer,
                     installments: installments,
                     isOverdue: true
                 )
@@ -332,10 +332,10 @@ struct CollectionsView: View {
             .padding(.horizontal, Spacing.md)
             .padding(.top, Spacing.md)
             
-            // Grouped by salesman
-            ForEach(groupBySalesman(dueInstallments), id: \.0.id) { salesman, installments in
-                SalesmanInstallmentsCard(
-                    salesman: salesman,
+            // Grouped by customer
+            ForEach(groupByCustomer(dueInstallments), id: \.0.id) { customer, installments in
+                CustomerInstallmentsCard(
+                    customer: customer,
                     installments: installments,
                     isOverdue: false
                 )
@@ -366,10 +366,10 @@ struct CollectionsView: View {
     
 }
 
-// MARK: - Salesman Installments Card (Read-only)
+// MARK: - Customer Installments Card (Read-only)
 
-struct SalesmanInstallmentsCard: View {
-    let salesman: Salesman
+struct CustomerInstallmentsCard: View {
+    let customer: Customer
     let installments: [Installment]
     let isOverdue: Bool
     
@@ -378,11 +378,11 @@ struct SalesmanInstallmentsCard: View {
     }
     
     var body: some View {
-        NavigationLink(destination: SalesmanDetailView(salesman: salesman)) {
+        NavigationLink(destination: CustomerDetailView(customer: customer)) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                // Salesman header
+                // Customer header
                 HStack {
-                    Text(salesman.name)
+                    Text(customer.name)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Theme.ink)
@@ -526,5 +526,5 @@ struct QuickDateButton: View {
 
 #Preview {
     CollectionsView()
-        .modelContainer(for: [Salesman.self, Transaction.self, Installment.self, Product.self, TransactionItem.self])
+        .modelContainer(for: [Customer.self, Transaction.self, Installment.self, Product.self, TransactionItem.self])
 }

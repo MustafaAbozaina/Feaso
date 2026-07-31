@@ -16,7 +16,7 @@ enum InstallmentsViewMode: String, CaseIterable {
 }
 
 struct InstallmentsListView: View {
-    let salesman: Salesman
+    let customer: Customer
     let filterTransaction: Transaction?
     
     @Environment(\.modelContext) private var modelContext
@@ -26,21 +26,21 @@ struct InstallmentsListView: View {
     @State private var installmentToConfirm: Installment?
     @State private var showPaymentConfirmation = false
     
-    init(salesman: Salesman, filterTransaction: Transaction? = nil) {
-        self.salesman = salesman
+    init(customer: Customer, filterTransaction: Transaction? = nil) {
+        self.customer = customer
         self.filterTransaction = filterTransaction
     }
     
     private var relevantInstallments: [Installment] {
-        let salesmanInstallments = allInstallments.filter { installment in
+        let customerInstallments = allInstallments.filter { installment in
             guard let transaction = installment.transaction else { return false }
-            return transaction.salesman?.id == salesman.id && transaction.reversedBy == nil
+            return transaction.customer?.id == customer.id && transaction.reversedBy == nil
         }
         
         if let filterTransaction = filterTransaction {
-            return salesmanInstallments.filter { $0.transaction?.id == filterTransaction.id }
+            return customerInstallments.filter { $0.transaction?.id == filterTransaction.id }
         }
-        return salesmanInstallments
+        return customerInstallments
     }
     
     private var groupedByDueDate: [(String, [Installment])] {
@@ -119,7 +119,7 @@ struct InstallmentsListView: View {
                 installmentToConfirm = nil
             }
         } message: { installment in
-            Text(String(localized: "This will record a payment of \(CurrencyFormatter.string(installment.amount)) \(CurrencyFormatter.symbol) and reduce the salesman's balance."))
+            Text(String(localized: "This will record a payment of \(CurrencyFormatter.string(installment.amount)) \(CurrencyFormatter.symbol) and reduce the customer's balance."))
         }
     }
     
@@ -370,7 +370,7 @@ struct InstallmentRowView: View {
 
 #Preview {
     NavigationStack {
-        InstallmentsListView(salesman: Salesman(name: "Ahmed"))
+        InstallmentsListView(customer: Customer(name: "Ahmed"))
     }
-    .modelContainer(for: [Salesman.self, Transaction.self, Installment.self])
+    .modelContainer(for: [Customer.self, Transaction.self, Installment.self])
 }

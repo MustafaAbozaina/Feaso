@@ -3,7 +3,7 @@ import SwiftData
 
 enum LedgerError: Error {
     case alreadyReversed
-    case missingSalesman
+    case missingCustomer
     case insufficientReturnableQuantity
 }
 
@@ -14,6 +14,84 @@ struct PriceLot {
 }
 
 enum LedgerService {
+    
+    // MARK: - Walk-in Customer for Quick Sales
+    
+    /// The special name used for anonymous walk-in customers
+    static let walkInCustomerName = "Walk-in Customer"
+    
+    /// Gets or creates a walk-in customer for anonymous cash sales
+    @MainActor
+    static func getOrCreateWalkInCustomer(in context: ModelContext) -> Customer {
+        let descriptor = FetchDescriptor<Customer>(
+            predicate: #Predicate<Customer> { $0.name == "Walk-in Customer" && $0.deletedAt == nil }
+        )
+        
+        if let existing = try? context.fetch(descriptor).first {
+            return existing
+        }
+        
+        let walkIn = Customer(name: walkInCustomerName, notes: "Anonymous cash sales")
+        context.insert(walkIn)
+        return walkIn
+    }
+    
+    /// Records a quick cash sale for a walk-in customer.
+    /// This creates both a distribution and an immediate payment, resulting in a net-zero balance.
+    @MainActor
+    static func recordQuickSale(
+        items: [(product: Product, quantity: Int)],
+        note: String? = nil,
+        attachmentFileName: String? = nil,
+        occurredAt: Date = .now,
+        in context: ModelContext
+    ) throws {
+        let walkInCustomer = getOrCreateWalkInCustomer(in: context)
+        
+        // Calculate total from items using cash price
+        let total = items.reduce(Decimal(0)) { sum, item in
+            sum + (item.product.cashPrice * Decimal(item.quantity))
+        }
+        
+        // 1. Record the distribution (creates positive balance)
+        let transactionItems = items.map { item in
+            TransactionItem(product: item.product, quantity: item.quantity, paymentType: .cash)
+        }
+        
+        let distributionTransaction = Transaction(
+            type: .distribution,
+            amount: total,
+            customer: walkInCustomer,
+            occurredAt: occurredAt,
+            note: note,
+            attachmentFileName: attachmentFileName,
+            paymentType: .cash
+        )
+        context.insert(distributionTransaction)
+        
+        for item in transactionItems {
+            item.transaction = distributionTransaction
+            context.insert(item)
+        }
+        
+        // 2. Record the payment immediately (creates negative balance, zeroing out)
+        let paymentTransaction = Transaction(
+            type: .payment,
+            amount: -total,  // negative to reduce balance
+            customer: walkInCustomer,
+            occurredAt: occurredAt,
+            note: note != nil ? "Payment for: \(note!)" : "Quick sale payment"
+        )
+        context.insert(paymentTransaction)
+        
+        try context.save()
+        
+        // Sync both transactions to Firestore
+        Task {
+            await SyncService.shared.push(distributionTransaction)
+            await SyncService.shared.push(paymentTransaction)
+        }
+    }
 
     /// Configuration for creating installment schedules
     struct InstallmentConfig {
@@ -46,7 +124,7 @@ enum LedgerService {
     
     @MainActor
     static func recordDistribution(
-        to salesman: Salesman,
+        to customer: Customer,
         items: [(product: Product, quantity: Int)],
         paymentType: PaymentType = .cash,
         installmentConfig: InstallmentConfig? = nil,
@@ -63,7 +141,7 @@ enum LedgerService {
         let transaction = Transaction(
             type: .distribution,
             amount: total,
-            salesman: salesman,
+            customer: customer,
             occurredAt: occurredAt,
             note: note,
             attachmentFileName: attachmentFileName,
@@ -187,8 +265,8 @@ enum LedgerService {
         in context: ModelContext
     ) throws {
         guard let transaction = installment.transaction,
-              let salesman = transaction.salesman else {
-            // Just mark as paid without creating payment if no salesman
+              let customer = transaction.customer else {
+            // Just mark as paid without creating payment if no customer
             installment.isPaid = true
             installment.paidDate = paidDate
             try context.save()
@@ -200,7 +278,7 @@ enum LedgerService {
         let payment = Transaction(
             type: .payment,
             amount: -installment.amount,  // Negative to reduce balance
-            salesman: salesman,
+            customer: customer,
             occurredAt: paidDate,
             note: paymentNote
         )
@@ -261,7 +339,7 @@ enum LedgerService {
         let transaction = Transaction(
             type: .stockReceipt,
             amount: total,
-            salesman: nil,
+            customer: nil,
             occurredAt: occurredAt,
             note: note,
             attachmentFileName: attachmentFileName
@@ -283,7 +361,7 @@ enum LedgerService {
 
     @MainActor
     static func recordPayment(
-        from salesman: Salesman,
+        from customer: Customer,
         amount: Decimal,
         note: String? = nil,
         attachmentFileName: String? = nil,
@@ -293,7 +371,7 @@ enum LedgerService {
         let transaction = Transaction(
             type: .payment,
             amount: -amount,  // stored as negative to reduce balance
-            salesman: salesman,
+            customer: customer,
             occurredAt: occurredAt,
             note: note,
             attachmentFileName: attachmentFileName
@@ -309,7 +387,7 @@ enum LedgerService {
 
     @MainActor
     static func recordReturn(
-        from salesman: Salesman,
+        from customer: Customer,
         items: [(product: Product, quantity: Int)],
         note: String? = nil,
         attachmentFileName: String? = nil,
@@ -321,7 +399,7 @@ enum LedgerService {
         // anything so a failed line leaves the ledger untouched.
         var transactionItems: [TransactionItem] = []
         for (product, quantity) in items {
-            let lots = outstandingLots(for: salesman, product: product)
+            let lots = outstandingLots(for: customer, product: product)
             let segments = try consume(quantity, from: lots)
             for segment in segments {
                 transactionItems.append(TransactionItem(
@@ -334,11 +412,11 @@ enum LedgerService {
 
         let total = transactionItems.reduce(Decimal(0)) { $0 + $1.lineTotal }
 
-        // Amount is negative because it reduces what salesman owes
+        // Amount is negative because it reduces what customer owes
         let transaction = Transaction(
             type: .return,
             amount: -total,
-            salesman: salesman,
+            customer: customer,
             occurredAt: occurredAt,
             note: note,
             attachmentFileName: attachmentFileName
@@ -367,14 +445,14 @@ enum LedgerService {
             throw LedgerError.alreadyReversed
         }
 
-        guard let salesman = original.salesman else {
-            throw LedgerError.missingSalesman
+        guard let customer = original.customer else {
+            throw LedgerError.missingCustomer
         }
 
         let reversal = Transaction(
             type: .adjustment,
             amount: -original.amount,
-            salesman: salesman,
+            customer: customer,
             note: String(localized: "Reversal")
         )
         reversal.reverses = original
@@ -391,10 +469,10 @@ enum LedgerService {
 
     // MARK: - Return Valuation
 
-    /// Units of a product still in the salesman's hands, grouped by the unit price
+    /// Units of a product still in the customer's hands, grouped by the unit price
     /// they were distributed at, oldest first. Prior returns consume lots FIFO.
-    static func outstandingLots(for salesman: Salesman, product: Product) -> [PriceLot] {
-        let activeTransactions = salesman.transactions
+    static func outstandingLots(for customer: Customer, product: Product) -> [PriceLot] {
+        let activeTransactions = customer.transactions
             .filter { $0.reversedBy == nil }
             .sorted {
                 if $0.occurredAt != $1.occurredAt { return $0.occurredAt < $1.occurredAt }
@@ -484,7 +562,7 @@ extension LedgerService {
         try? context.delete(model: Installment.self)
         try? context.delete(model: Transaction.self)
         try? context.delete(model: Product.self)
-        try? context.delete(model: Salesman.self)
+        try? context.delete(model: Customer.self)
         
         try? context.save()
     }

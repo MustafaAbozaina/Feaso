@@ -1,11 +1,11 @@
 import SwiftUI
 
-struct SalesmanRow: View {
-    let salesman: Salesman
+struct CustomerRow: View {
+    let customer: Customer
     let isSettled: Bool
     
     private var isStale: Bool {
-        guard let lastActivity = salesman.lastActivityAt else { return false }
+        guard let lastActivity = customer.lastActivityAt else { return false }
         let daysSinceActivity = Calendar.current.dateComponents(
             [.day],
             from: lastActivity,
@@ -15,7 +15,7 @@ struct SalesmanRow: View {
     }
     
     private var overdueInstallmentsCount: Int {
-        salesman.transactions
+        customer.transactions
             .filter { $0.reversedBy == nil }
             .flatMap { $0.installments }
             .filter { $0.isOverdue }
@@ -26,7 +26,7 @@ struct SalesmanRow: View {
         HStack(spacing: Spacing.md) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 HStack(spacing: Spacing.sm) {
-                    Text(salesman.name)
+                    Text(customer.name)
                         .font(.body)
                         .fontWeight(.medium)
                         .foregroundStyle(Color.Theme.ink)
@@ -47,7 +47,7 @@ struct SalesmanRow: View {
                     }
                 }
                 
-                if let lastActivity = salesman.lastActivityAt {
+                if let lastActivity = customer.lastActivityAt {
                     Text(DateFormatting.relativeString(from: lastActivity))
                         .font(.caption)
                         .foregroundStyle(isStale ? Color.Theme.warning : Color.Theme.ink3)
@@ -58,7 +58,7 @@ struct SalesmanRow: View {
             
             if !isSettled {
                 HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
-                    Text(CurrencyFormatter.string(salesman.balance))
+                    Text(CurrencyFormatter.string(customer.balance))
                         .font(.body)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Theme.ink)
@@ -76,15 +76,15 @@ struct SalesmanRow: View {
 
 #Preview {
     List {
-        SalesmanRow(
-            salesman: {
-                let s = Salesman(name: "Ahmed", phone: "+201001234567")
-                return s
+        CustomerRow(
+            customer: {
+                let c = Customer(name: "Ahmed", phone: "+201001234567")
+                return c
             }(),
             isSettled: false
         )
-        SalesmanRow(
-            salesman: Salesman(name: "Khaled"),
+        CustomerRow(
+            customer: Customer(name: "Khaled"),
             isSettled: true
         )
     }

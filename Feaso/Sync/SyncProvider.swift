@@ -24,8 +24,8 @@ protocol SyncProvider {
     /// Stop all sync operations
     func stopSync()
     
-    /// Push a salesman to the remote store
-    func push(_ salesman: Salesman) async throws
+    /// Push a customer to the remote store
+    func push(_ customer: Customer) async throws
     
     /// Push a product to the remote store
     func push(_ product: Product) async throws

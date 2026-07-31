@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct GiveProductsView: View {
-    let salesman: Salesman
+    let customer: Customer
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -30,7 +30,7 @@ struct GiveProductsView: View {
     }
     
     private var projectedBalance: Decimal {
-        salesman.balance + newTotal
+        customer.balance + newTotal
     }
     
     private var hasStockWarnings: Bool {
@@ -54,7 +54,7 @@ struct GiveProductsView: View {
             footerBar
         }
         .background(Color.Theme.background)
-        .navigationTitle(String(localized: "Gave to \(salesman.name)"))
+        .navigationTitle(String(localized: "Sell to \(customer.name)"))
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -415,7 +415,7 @@ struct GiveProductsView: View {
         VStack(spacing: Spacing.md) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 HStack {
-                    Text(String(localized: "\(salesman.name) will owe"))
+                    Text(String(localized: "\(customer.name) will owe"))
                         .font(.subheadline)
                         .foregroundStyle(Color.Theme.ink2)
                     
@@ -434,7 +434,7 @@ struct GiveProductsView: View {
                 }
                 
                 if !lines.isEmpty {
-                    Text(String(localized: "Current \(CurrencyFormatter.string(salesman.balance)) + new \(CurrencyFormatter.string(newTotal))"))
+                    Text(String(localized: "Current \(CurrencyFormatter.string(customer.balance)) + new \(CurrencyFormatter.string(newTotal))"))
                         .font(.caption)
                         .foregroundStyle(Color.Theme.ink3)
                 }
@@ -502,7 +502,7 @@ struct GiveProductsView: View {
         let items = lines.map { ($0.product, $0.quantity) }
         do {
             try LedgerService.recordDistribution(
-                to: salesman,
+                to: customer,
                 items: items,
                 paymentType: paymentType,
                 installmentConfig: installmentConfig,
@@ -632,7 +632,7 @@ private struct QuantityStepperView: View {
 
 #Preview {
     NavigationStack {
-        GiveProductsView(salesman: Salesman(name: "Ahmed"))
+        GiveProductsView(customer: Customer(name: "Ahmed"))
     }
-    .modelContainer(for: [Salesman.self, Product.self, Transaction.self, TransactionItem.self])
+    .modelContainer(for: [Customer.self, Product.self, Transaction.self, TransactionItem.self])
 }

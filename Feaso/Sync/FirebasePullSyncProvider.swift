@@ -86,13 +86,13 @@ final class FirebasePullSyncProvider: SyncProvider {
     
     // MARK: - Push Operations
     
-    func push(_ salesman: Salesman) async throws {
-        guard let collection = businessCollection("salesmen") else {
+    func push(_ customer: Customer) async throws {
+        guard let collection = businessCollection("customers") else {
             throw SyncError.noBusinessId
         }
         
-        let firestoreModel = FirestoreSalesman(from: salesman)
-        try collection.document(salesman.id.uuidString).setData(from: firestoreModel)
+        let firestoreModel = FirestoreCustomer(from: customer)
+        try collection.document(customer.id.uuidString).setData(from: firestoreModel)
     }
     
     func push(_ product: Product) async throws {
@@ -122,7 +122,7 @@ final class FirebasePullSyncProvider: SyncProvider {
                 createdAt: transaction.createdAt,
                 attachmentFileName: transaction.attachmentFileName,
                 paymentTypeRaw: transaction.paymentTypeRaw,
-                salesmanId: transaction.salesman?.id.uuidString,
+                customerId: transaction.customer?.id.uuidString,
                 reversedById: transaction.reversedBy?.id.uuidString,
                 reversesId: transaction.reverses?.id.uuidString,
                 items: transaction.items.map { item in
@@ -146,7 +146,7 @@ final class FirebasePullSyncProvider: SyncProvider {
             createdAt: transactionData.createdAt,
             attachmentFileName: transactionData.attachmentFileName,
             paymentTypeRaw: transactionData.paymentTypeRaw,
-            salesmanId: transactionData.salesmanId,
+            customerId: transactionData.customerId,
             reversedById: transactionData.reversedById,
             reversesId: transactionData.reversesId
         )
@@ -202,36 +202,36 @@ final class FirebasePullSyncProvider: SyncProvider {
         guard let context = modelContext else { return }
         
         // Maps to track IDs for relationship reconstruction
-        var salesmenMap: [String: Salesman] = [:]
+        var customersMap: [String: Customer] = [:]
         var productsMap: [String: Product] = [:]
         var transactionsMap: [String: Transaction] = [:]
         
         // Fetch existing local IDs to avoid duplicates
-        let existingSalesmenIds = await getExistingIds(for: Salesman.self, in: context)
+        let existingCustomerIds = await getExistingIds(for: Customer.self, in: context)
         let existingProductIds = await getExistingIds(for: Product.self, in: context)
         let existingTransactionIds = await getExistingIds(for: Transaction.self, in: context)
         let existingItemIds = await getExistingIds(for: TransactionItem.self, in: context)
         let existingInstallmentIds = await getExistingIds(for: Installment.self, in: context)
         
-        // Pull salesmen
-        if let collection = businessCollection("salesmen") {
+        // Pull customers
+        if let collection = businessCollection("customers") {
             let snapshot = try await collection.getDocuments()
             for doc in snapshot.documents {
-                if let firestoreSalesman = try? doc.data(as: FirestoreSalesman.self) {
-                    guard let uuid = UUID(uuidString: firestoreSalesman.id) else { continue }
+                if let firestoreCustomer = try? doc.data(as: FirestoreCustomer.self) {
+                    guard let uuid = UUID(uuidString: firestoreCustomer.id) else { continue }
                     
                     await MainActor.run {
-                        if existingSalesmenIds.contains(uuid) {
+                        if existingCustomerIds.contains(uuid) {
                             // Update existing
-                            if let existing = fetchLocal(Salesman.self, id: uuid, in: context) {
-                                firestoreSalesman.update(existing)
-                                salesmenMap[firestoreSalesman.id] = existing
+                            if let existing = fetchLocal(Customer.self, id: uuid, in: context) {
+                                firestoreCustomer.update(existing)
+                                customersMap[firestoreCustomer.id] = existing
                             }
                         } else {
                             // Insert new
-                            let salesman = firestoreSalesman.toSalesman()
-                            context.insert(salesman)
-                            salesmenMap[firestoreSalesman.id] = salesman
+                            let customer = firestoreCustomer.toCustomer()
+                            context.insert(customer)
+                            customersMap[firestoreCustomer.id] = customer
                         }
                     }
                 }
@@ -265,9 +265,9 @@ final class FirebasePullSyncProvider: SyncProvider {
         
         // Also populate maps with existing local data for relationship linking
         await MainActor.run {
-            for id in existingSalesmenIds {
-                if let salesman = fetchLocal(Salesman.self, id: id, in: context) {
-                    salesmenMap[id.uuidString] = salesman
+            for id in existingCustomerIds {
+                if let customer = fetchLocal(Customer.self, id: id, in: context) {
+                    customersMap[id.uuidString] = customer
                 }
             }
             for id in existingProductIds {
@@ -287,21 +287,21 @@ final class FirebasePullSyncProvider: SyncProvider {
                     
                     await MainActor.run {
                         if existingTransactionIds.contains(uuid) {
-                            // Already exists - update salesman relationship if needed
+                            // Already exists - update customer relationship if needed
                             if let existing = fetchLocal(Transaction.self, id: uuid, in: context) {
-                                if let salesmanId = firestoreTransaction.salesmanId,
-                                   let salesman = salesmenMap[salesmanId],
-                                   existing.salesman?.id.uuidString != salesmanId {
-                                    existing.salesman = salesman
+                                if let customerId = firestoreTransaction.customerId,
+                                   let customer = customersMap[customerId],
+                                   existing.customer?.id.uuidString != customerId {
+                                    existing.customer = customer
                                 }
                                 transactionsMap[firestoreTransaction.id] = existing
                             }
                         } else {
                             // Insert new
                             let transaction = firestoreTransaction.toTransaction()
-                            if let salesmanId = firestoreTransaction.salesmanId,
-                               let salesman = salesmenMap[salesmanId] {
-                                transaction.salesman = salesman
+                            if let customerId = firestoreTransaction.customerId,
+                               let customer = customersMap[customerId] {
+                                transaction.customer = customer
                             }
                             context.insert(transaction)
                             transactionsMap[firestoreTransaction.id] = transaction
@@ -422,21 +422,21 @@ final class FirebasePullSyncProvider: SyncProvider {
         guard let context = modelContext else { return false }
         
         return await MainActor.run {
-            let salesmenCount = (try? context.fetchCount(FetchDescriptor<Salesman>())) ?? 0
+            let customersCount = (try? context.fetchCount(FetchDescriptor<Customer>())) ?? 0
             let productsCount = (try? context.fetchCount(FetchDescriptor<Product>())) ?? 0
-            return salesmenCount > 0 || productsCount > 0
+            return customersCount > 0 || productsCount > 0
         }
     }
     
     private func pushAllLocalData() async throws {
         guard let context = modelContext else { return }
         
-        // Push all salesmen
-        let salesmen = try await MainActor.run {
-            try context.fetch(FetchDescriptor<Salesman>())
+        // Push all customers
+        let customers = try await MainActor.run {
+            try context.fetch(FetchDescriptor<Customer>())
         }
-        for salesman in salesmen {
-            try await push(salesman)
+        for customer in customers {
+            try await push(customer)
         }
         
         // Push all products

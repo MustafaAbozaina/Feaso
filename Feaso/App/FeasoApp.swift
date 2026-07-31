@@ -12,7 +12,7 @@ struct FeasoApp: App {
         
         do {
             let container = try ModelContainer(for: 
-                Salesman.self,
+                Customer.self,
                 Product.self,
                 Transaction.self,
                 TransactionItem.self,

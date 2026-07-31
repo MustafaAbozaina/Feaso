@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Salesman {
+final class Customer {
     var id: UUID
     var name: String
     var phone: String?
@@ -10,7 +10,7 @@ final class Salesman {
     var createdAt: Date
     var deletedAt: Date?
     
-    @Relationship(deleteRule: .nullify, inverse: \Transaction.salesman)
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.customer)
     var transactions: [Transaction] = []
     
     init(name: String, phone: String? = nil, notes: String? = nil) {
@@ -21,7 +21,7 @@ final class Salesman {
         self.createdAt = .now
     }
     
-    /// Computed balance. Positive = salesman owes the business.
+    /// Computed balance. Positive = customer owes the business.
     /// Sums the full journal: a reversed transaction and its reversal cancel out.
     var balance: Decimal {
         transactions.reduce(Decimal(0)) { $0 + $1.amount }
@@ -34,7 +34,7 @@ final class Salesman {
         transactions.map(\.occurredAt).max()
     }
     
-    /// Calculates how many units of each product the salesman can still return.
+    /// Calculates how many units of each product the customer can still return.
     /// Formula: distributed quantity - already returned quantity (excluding reversed transactions)
     var returnableProducts: [Product: Int] {
         let activeTransactions = transactions.filter { $0.reversedBy == nil }
@@ -68,7 +68,7 @@ final class Salesman {
         return result
     }
     
-    /// Returns true if the salesman has any products that can be returned
+    /// Returns true if the customer has any products that can be returned
     var hasReturnableProducts: Bool {
         !returnableProducts.isEmpty
     }

@@ -3,7 +3,7 @@ import SwiftData
 import UIKit
 
 struct RecordPaymentView: View {
-    let salesman: Salesman
+    let customer: Customer
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -22,15 +22,15 @@ struct RecordPaymentView: View {
     }
     
     private var projectedBalance: Decimal {
-        salesman.balance - amount
+        customer.balance - amount
     }
     
     private var isOverpayment: Bool {
-        amount > salesman.balance
+        amount > customer.balance
     }
     
     private var overpaymentAmount: Decimal {
-        amount - salesman.balance
+        amount - customer.balance
     }
     
     private var canConfirm: Bool {
@@ -52,7 +52,7 @@ struct RecordPaymentView: View {
             confirmButton
         }
         .background(Color.Theme.background)
-        .navigationTitle(String(localized: "Payment from \(salesman.name)"))
+        .navigationTitle(String(localized: "Payment from \(customer.name)"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             isAmountFocused = true
@@ -66,7 +66,7 @@ struct RecordPaymentView: View {
             }
             Button(String(localized: "Cancel"), role: .cancel) {}
         } message: {
-            Text(String(localized: "This is more than \(salesman.name) currently owes. Record an overpayment of \(CurrencyFormatter.string(overpaymentAmount)) \(CurrencyFormatter.symbol)?"))
+            Text(String(localized: "This is more than \(customer.name) currently owes. Record an overpayment of \(CurrencyFormatter.string(overpaymentAmount)) \(CurrencyFormatter.symbol)?"))
         }
         .sheet(isPresented: $showingAttachmentSheet) {
             AttachmentSourceSheet(
@@ -105,7 +105,7 @@ struct RecordPaymentView: View {
                 .multilineTextAlignment(.center)
                 .focused($isAmountFocused)
             
-            Text(String(localized: "\(salesman.name) currently owes \(CurrencyFormatter.string(salesman.balance)) \(CurrencyFormatter.symbol)"))
+            Text(String(localized: "\(customer.name) currently owes \(CurrencyFormatter.string(customer.balance)) \(CurrencyFormatter.symbol)"))
                 .font(.caption)
                 .foregroundStyle(Color.Theme.ink3)
         }
@@ -126,7 +126,7 @@ struct RecordPaymentView: View {
                 .foregroundStyle(Color.Theme.ink2)
             
             HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
-                Text(String(localized: "\(salesman.name) will owe"))
+                Text(String(localized: "\(customer.name) will owe"))
                     .font(.body)
                     .foregroundStyle(Color.Theme.ink2)
                 
@@ -229,7 +229,7 @@ struct RecordPaymentView: View {
         
         do {
             try LedgerService.recordPayment(
-                from: salesman,
+                from: customer,
                 amount: amount,
                 note: note.isEmpty ? nil : note,
                 attachmentFileName: attachmentFileName,
@@ -255,10 +255,10 @@ struct RecordPaymentView: View {
 
 #Preview {
     NavigationStack {
-        RecordPaymentView(salesman: {
-            let s = Salesman(name: "Ahmed")
-            return s
+        RecordPaymentView(customer: {
+            let c = Customer(name: "Ahmed")
+            return c
         }())
     }
-    .modelContainer(for: [Salesman.self, Product.self, Transaction.self, TransactionItem.self])
+    .modelContainer(for: [Customer.self, Product.self, Transaction.self, TransactionItem.self])
 }

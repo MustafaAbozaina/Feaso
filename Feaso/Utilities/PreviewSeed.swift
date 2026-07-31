@@ -5,7 +5,7 @@ enum PreviewSeed {
     
     @MainActor
     static func populateIfEmpty(_ context: ModelContext) throws {
-        let existing = try context.fetch(FetchDescriptor<Salesman>())
+        let existing = try context.fetch(FetchDescriptor<Customer>())
         guard existing.isEmpty else { return }
         
         // MARK: - Products
@@ -77,15 +77,15 @@ enum PreviewSeed {
         let products = [tv, soundbar, coffeeMachine, fan, toaster, blender, microwave, airConditioner]
         products.forEach { context.insert($0) }
         
-        // MARK: - Salesmen
-        let ahmed = Salesman(name: "Ahmed", phone: "+201001234567")
-        let mahmoud = Salesman(name: "Mahmoud", phone: "+201009876543")
-        let yasser = Salesman(name: "Yasser", phone: "+201005551234")
-        let khaled = Salesman(name: "Khaled")
-        let sherif = Salesman(name: "Sherif", phone: "+201007778888", notes: "Works in Giza area")
+        // MARK: - Customers
+        let ahmed = Customer(name: "Ahmed", phone: "+201001234567")
+        let mahmoud = Customer(name: "Mahmoud", phone: "+201009876543")
+        let yasser = Customer(name: "Yasser", phone: "+201005551234")
+        let khaled = Customer(name: "Khaled")
+        let sherif = Customer(name: "Sherif", phone: "+201007778888", notes: "Works in Giza area")
         
-        let salesmen = [ahmed, mahmoud, yasser, khaled, sherif]
-        salesmen.forEach { context.insert($0) }
+        let customers = [ahmed, mahmoud, yasser, khaled, sherif]
+        customers.forEach { context.insert($0) }
         
         try context.save()
         

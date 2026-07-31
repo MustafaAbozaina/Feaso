@@ -1,26 +1,26 @@
 import SwiftUI
 import SwiftData
 
-struct SalesmenListView: View {
-    @Query(filter: #Predicate<Salesman> { $0.deletedAt == nil })
-    private var salesmen: [Salesman]
+struct CustomersListView: View {
+    @Query(filter: #Predicate<Customer> { $0.deletedAt == nil })
+    private var customers: [Customer]
     
     @State private var showingAddSheet = false
     
-    private var owing: [Salesman] {
-        salesmen
+    private var owing: [Customer] {
+        customers
             .filter { $0.balance > 0 }
             .sorted { $0.balance > $1.balance }
     }
     
-    private var overpaid: [Salesman] {
-        salesmen
+    private var overpaid: [Customer] {
+        customers
             .filter { $0.balance < 0 }
             .sorted { $0.balance < $1.balance }
     }
     
-    private var settled: [Salesman] {
-        salesmen
+    private var settled: [Customer] {
+        customers
             .filter { $0.balance == 0 }
             .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }
@@ -35,13 +35,13 @@ struct SalesmenListView: View {
     
     var body: some View {
         Group {
-            if salesmen.isEmpty {
+            if customers.isEmpty {
                 emptyState
             } else {
-                salesmenList
+                customersList
             }
         }
-        .navigationTitle(String(localized: "Salesmen"))
+        .navigationTitle(String(localized: "Customers"))
         .background(Color.Theme.background)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -54,7 +54,7 @@ struct SalesmenListView: View {
         }
         .sheet(isPresented: $showingAddSheet) {
             NavigationStack {
-                SalesmanEditorView()
+                CustomerEditorView()
             }
         }
     }
@@ -62,21 +62,21 @@ struct SalesmenListView: View {
     private var emptyState: some View {
         EmptyStateView(
             systemImage: "person.2",
-            title: String(localized: "No Salesmen"),
-            message: String(localized: "Add your first salesman to start tracking distributions."),
-            actionTitle: String(localized: "Add Salesman"),
+            title: String(localized: "No Customers"),
+            message: String(localized: "Add your first customer to start tracking sales."),
+            actionTitle: String(localized: "Add Customer"),
             action: { showingAddSheet = true }
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    private var salesmenList: some View {
+    private var customersList: some View {
         List {
             Section {
                 SummaryCard(
                     title: String(localized: "Total Outstanding"),
                     amount: totalOutstanding,
-                    subtitle: String(localized: "\(owingCount) salesmen with balance")
+                    subtitle: String(localized: "\(owingCount) customers with balance")
                 )
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
@@ -84,9 +84,9 @@ struct SalesmenListView: View {
             
             if !owing.isEmpty {
                 Section {
-                    ForEach(owing) { salesman in
-                        NavigationLink(value: salesman) {
-                            SalesmanRow(salesman: salesman, isSettled: false)
+                    ForEach(owing) { customer in
+                        NavigationLink(value: customer) {
+                            CustomerRow(customer: customer, isSettled: false)
                         }
                     }
                 } header: {
@@ -99,9 +99,9 @@ struct SalesmenListView: View {
             
             if !overpaid.isEmpty {
                 Section {
-                    ForEach(overpaid) { salesman in
-                        NavigationLink(value: salesman) {
-                            SalesmanRow(salesman: salesman, isSettled: false)
+                    ForEach(overpaid) { customer in
+                        NavigationLink(value: customer) {
+                            CustomerRow(customer: customer, isSettled: false)
                         }
                     }
                 } header: {
@@ -114,9 +114,9 @@ struct SalesmenListView: View {
             
             if !settled.isEmpty {
                 Section {
-                    ForEach(settled) { salesman in
-                        NavigationLink(value: salesman) {
-                            SalesmanRow(salesman: salesman, isSettled: true)
+                    ForEach(settled) { customer in
+                        NavigationLink(value: customer) {
+                            CustomerRow(customer: customer, isSettled: true)
                         }
                     }
                 } header: {
@@ -132,15 +132,15 @@ struct SalesmenListView: View {
         .refreshable {
             await SyncService.shared.refresh()
         }
-        .navigationDestination(for: Salesman.self) { salesman in
-            SalesmanDetailView(salesman: salesman)
+        .navigationDestination(for: Customer.self) { customer in
+            CustomerDetailView(customer: customer)
         }
     }
 }
 
 #Preview {
     NavigationStack {
-        SalesmenListView()
+        CustomersListView()
     }
-    .modelContainer(for: [Salesman.self, Product.self, Transaction.self, TransactionItem.self])
+    .modelContainer(for: [Customer.self, Product.self, Transaction.self, TransactionItem.self])
 }

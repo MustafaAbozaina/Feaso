@@ -2,7 +2,7 @@ import SwiftUI
 import PDFKit
 
 struct StatementPreviewView: View {
-    let salesman: Salesman
+    let customer: Customer
     
     @Environment(\.dismiss) private var dismiss
     @State private var pdfData: Data?
@@ -65,7 +65,7 @@ struct StatementPreviewView: View {
         // Small delay for smooth animation
         try? await Task.sleep(nanoseconds: 300_000_000)
         
-        pdfData = StatementGenerator.generatePDF(for: salesman)
+        pdfData = StatementGenerator.generatePDF(for: customer)
         isGenerating = false
     }
 }
@@ -108,8 +108,8 @@ struct ShareSheet: UIViewControllerRepresentable {
 }
 
 #Preview {
-    StatementPreviewView(salesman: {
-        let s = Salesman(name: "Ahmed Mohamed", phone: "+201001234567")
-        return s
+    StatementPreviewView(customer: {
+        let c = Customer(name: "Ahmed Mohamed", phone: "+201001234567")
+        return c
     }())
 }

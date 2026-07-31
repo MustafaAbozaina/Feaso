@@ -72,10 +72,10 @@ struct RootView: View {
     private var mainTabView: some View {
         TabView {
             NavigationStack {
-                SalesmenListView()
+                CustomersListView()
             }
             .tabItem {
-                Label(String(localized: "Salesmen"), systemImage: "person.2.fill")
+                Label(String(localized: "Customers"), systemImage: "person.2.fill")
             }
             
             CollectionsView()

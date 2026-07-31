@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-struct SalesmanEditorView: View {
-    let salesman: Salesman?
+struct CustomerEditorView: View {
+    let customer: Customer?
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -13,7 +13,7 @@ struct SalesmanEditorView: View {
     @State private var showingDeleteAlert = false
     
     private var isEditing: Bool {
-        salesman != nil
+        customer != nil
     }
     
     private var canSave: Bool {
@@ -21,12 +21,12 @@ struct SalesmanEditorView: View {
     }
     
     private var canDelete: Bool {
-        guard let salesman else { return false }
-        return salesman.transactions.isEmpty
+        guard let customer else { return false }
+        return customer.transactions.isEmpty
     }
     
-    init(salesman: Salesman? = nil) {
-        self.salesman = salesman
+    init(customer: Customer? = nil) {
+        self.customer = customer
     }
     
     var body: some View {
@@ -49,14 +49,14 @@ struct SalesmanEditorView: View {
                     } label: {
                         HStack {
                             Spacer()
-                            Text(String(localized: "Delete Salesman"))
+                            Text(String(localized: "Delete Customer"))
                             Spacer()
                         }
                     }
                     .disabled(!canDelete)
                 } footer: {
                     if !canDelete {
-                        Text(String(localized: "Cannot delete a salesman with transaction history."))
+                        Text(String(localized: "Cannot delete a customer with transaction history."))
                     }
                 }
             }
@@ -64,8 +64,8 @@ struct SalesmanEditorView: View {
         .scrollContentBackground(.hidden)
         .background(Color.Theme.background)
         .navigationTitle(isEditing 
-                         ? String(localized: "Edit Salesman") 
-                         : String(localized: "New Salesman"))
+                         ? String(localized: "Edit Customer") 
+                         : String(localized: "New Customer"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -81,18 +81,18 @@ struct SalesmanEditorView: View {
             }
         }
         .onAppear {
-            if let salesman {
-                name = salesman.name
-                phone = salesman.phone ?? ""
-                notes = salesman.notes ?? ""
+            if let customer {
+                name = customer.name
+                phone = customer.phone ?? ""
+                notes = customer.notes ?? ""
             }
         }
         .alert(
-            String(localized: "Delete Salesman?"),
+            String(localized: "Delete Customer?"),
             isPresented: $showingDeleteAlert
         ) {
             Button(String(localized: "Delete"), role: .destructive) {
-                deleteSalesman()
+                deleteCustomer()
             }
             Button(String(localized: "Cancel"), role: .cancel) {}
         } message: {
@@ -105,41 +105,41 @@ struct SalesmanEditorView: View {
         let trimmedPhone = phone.trimmingCharacters(in: .whitespaces)
         let trimmedNotes = notes.trimmingCharacters(in: .whitespaces)
         
-        let salesmanToSync: Salesman
+        let customerToSync: Customer
         
-        if let salesman {
-            salesman.name = trimmedName
-            salesman.phone = trimmedPhone.isEmpty ? nil : trimmedPhone
-            salesman.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
-            salesmanToSync = salesman
+        if let customer {
+            customer.name = trimmedName
+            customer.phone = trimmedPhone.isEmpty ? nil : trimmedPhone
+            customer.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
+            customerToSync = customer
         } else {
-            let newSalesman = Salesman(
+            let newCustomer = Customer(
                 name: trimmedName,
                 phone: trimmedPhone.isEmpty ? nil : trimmedPhone,
                 notes: trimmedNotes.isEmpty ? nil : trimmedNotes
             )
-            modelContext.insert(newSalesman)
-            salesmanToSync = newSalesman
+            modelContext.insert(newCustomer)
+            customerToSync = newCustomer
         }
         
         try? modelContext.save()
         
         // Sync to Firestore
         Task {
-            await SyncService.shared.push(salesmanToSync)
+            await SyncService.shared.push(customerToSync)
         }
         
         dismiss()
     }
     
-    private func deleteSalesman() {
-        guard let salesman else { return }
-        salesman.deletedAt = .now
+    private func deleteCustomer() {
+        guard let customer else { return }
+        customer.deletedAt = .now
         try? modelContext.save()
         
         // Sync deletion to Firestore
         Task {
-            await SyncService.shared.push(salesman)
+            await SyncService.shared.push(customer)
         }
         
         dismiss()
@@ -148,14 +148,14 @@ struct SalesmanEditorView: View {
 
 #Preview("New") {
     NavigationStack {
-        SalesmanEditorView()
+        CustomerEditorView()
     }
-    .modelContainer(for: [Salesman.self])
+    .modelContainer(for: [Customer.self])
 }
 
 #Preview("Edit") {
     NavigationStack {
-        SalesmanEditorView(salesman: Salesman(name: "Ahmed", phone: "+201001234567"))
+        CustomerEditorView(customer: Customer(name: "Ahmed", phone: "+201001234567"))
     }
-    .modelContainer(for: [Salesman.self])
+    .modelContainer(for: [Customer.self])
 }

@@ -3,10 +3,10 @@ import PDFKit
 
 enum StatementGenerator {
     
-    /// Generates a PDF statement for a salesman
+    /// Generates a PDF statement for a customer
     @MainActor
     static func generatePDF(
-        for salesman: Salesman,
+        for customer: Customer,
         dateRange: ClosedRange<Date>? = nil,
         companyName: String = "Feaso"
     ) -> Data? {
@@ -18,7 +18,7 @@ enum StatementGenerator {
             bounds: CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
         )
         
-        let transactions = filteredTransactions(for: salesman, dateRange: dateRange)
+        let transactions = filteredTransactions(for: customer, dateRange: dateRange)
         let currency = CurrencyFormatter.symbol
         
         let data = pdfRenderer.pdfData { context in
@@ -49,7 +49,7 @@ enum StatementGenerator {
             drawLine(in: context.cgContext, from: CGPoint(x: margin, y: yPosition), to: CGPoint(x: pageWidth - margin, y: yPosition))
             yPosition += 20
             
-            // MARK: - Salesman Info
+            // MARK: - Customer Info
             let labelAttributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 11, weight: .regular),
                 .foregroundColor: UIColor.gray
@@ -60,9 +60,9 @@ enum StatementGenerator {
             ]
             
             // Name
-            String(localized: "Salesman").draw(at: CGPoint(x: margin, y: yPosition), withAttributes: labelAttributes)
+            String(localized: "Customer").draw(at: CGPoint(x: margin, y: yPosition), withAttributes: labelAttributes)
             yPosition += 15
-            salesman.name.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: valueAttributes)
+            customer.name.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: valueAttributes)
             
             // Date on right side
             let dateFormatter = DateFormatter()
@@ -73,7 +73,7 @@ enum StatementGenerator {
             yPosition += 30
             
             // Phone if available
-            if let phone = salesman.phone, !phone.isEmpty {
+            if let phone = customer.phone, !phone.isEmpty {
                 String(localized: "Phone").draw(at: CGPoint(x: margin, y: yPosition), withAttributes: labelAttributes)
                 yPosition += 15
                 phone.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: valueAttributes)
@@ -96,7 +96,7 @@ enum StatementGenerator {
             ]
             balanceLabel.draw(at: CGPoint(x: margin + 15, y: yPosition + 12), withAttributes: balanceLabelAttributes)
             
-            let balanceValue = "\(CurrencyFormatter.string(salesman.balance)) \(currency)"
+            let balanceValue = "\(CurrencyFormatter.string(customer.balance)) \(currency)"
             let balanceValueAttributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 28, weight: .bold),
                 .foregroundColor: UIColor.systemBlue
@@ -262,13 +262,13 @@ enum StatementGenerator {
             dateString.draw(at: CGPoint(x: pageWidth - margin - 200, y: yPosition), withAttributes: valueAttributes)
             yPosition += 30
             
-            // Salesman
-            if let salesman = transaction.salesman {
-                String(localized: "Salesman").draw(at: CGPoint(x: margin, y: yPosition), withAttributes: labelAttributes)
+            // Customer
+            if let customer = transaction.customer {
+                String(localized: "Customer").draw(at: CGPoint(x: margin, y: yPosition), withAttributes: labelAttributes)
                 yPosition += 15
-                salesman.name.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: valueAttributes)
+                customer.name.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: valueAttributes)
                 
-                if let phone = salesman.phone, !phone.isEmpty {
+                if let phone = customer.phone, !phone.isEmpty {
                     phone.draw(at: CGPoint(x: pageWidth - margin - 200, y: yPosition), withAttributes: valueAttributes)
                 }
                 yPosition += 30
@@ -525,21 +525,21 @@ enum StatementGenerator {
     }
     
     /// Generates a shareable text summary
-    static func generateTextSummary(for salesman: Salesman) -> String {
+    static func generateTextSummary(for customer: Customer) -> String {
         let currency = CurrencyFormatter.symbol
-        let balance = CurrencyFormatter.string(salesman.balance)
+        let balance = CurrencyFormatter.string(customer.balance)
         
         var text = """
         📋 *\(String(localized: "Account Statement"))*
         
-        👤 \(salesman.name)
+        👤 \(customer.name)
         💰 \(String(localized: "Balance")): \(balance) \(currency)
         
         """
         
         // Full journal: reversed transactions appear alongside their reversal
         // so the listed amounts reconcile with the balance.
-        let recentTransactions = salesman.transactions
+        let recentTransactions = customer.transactions
             .sorted { $0.occurredAt > $1.occurredAt }
             .prefix(5)
         
@@ -564,10 +564,10 @@ enum StatementGenerator {
     
     // MARK: - Private Helpers
     
-    private static func filteredTransactions(for salesman: Salesman, dateRange: ClosedRange<Date>?) -> [Transaction] {
+    private static func filteredTransactions(for customer: Customer, dateRange: ClosedRange<Date>?) -> [Transaction] {
         // Full journal: reversed transactions appear alongside their reversal
         // so the statement rows reconcile with the balance.
-        var transactions = salesman.transactions
+        var transactions = customer.transactions
             .sorted { $0.occurredAt > $1.occurredAt }
         
         if let range = dateRange {

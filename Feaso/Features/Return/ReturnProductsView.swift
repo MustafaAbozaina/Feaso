@@ -41,7 +41,7 @@ struct ReturnLineDraft: Identifiable {
 }
 
 struct ReturnProductsView: View {
-    let salesman: Salesman
+    let customer: Customer
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -57,7 +57,7 @@ struct ReturnProductsView: View {
     /// Products that can still be returned (not already in cart)
     private var availableReturnableProducts: [ReturnableProduct] {
         let alreadyInCart = Set(lines.map { $0.product.id })
-        return salesman.returnableProducts
+        return customer.returnableProducts
             .filter { !alreadyInCart.contains($0.key.id) }
             .map { ReturnableProduct(product: $0.key, maxQuantity: $0.value) }
             .sorted { $0.product.name < $1.product.name }
@@ -74,12 +74,12 @@ struct ReturnProductsView: View {
     
     /// Balance after return (debt decreases)
     private var projectedBalance: Decimal {
-        salesman.balance - returnTotal
+        customer.balance - returnTotal
     }
     
     var body: some View {
         VStack(spacing: 0) {
-            if !salesman.hasReturnableProducts && lines.isEmpty {
+            if !customer.hasReturnableProducts && lines.isEmpty {
                 noProductsView
             } else {
                 cartList
@@ -87,7 +87,7 @@ struct ReturnProductsView: View {
             }
         }
         .background(Color.Theme.background)
-        .navigationTitle(String(localized: "Return from \(salesman.name)"))
+        .navigationTitle(String(localized: "Return from \(customer.name)"))
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -111,7 +111,7 @@ struct ReturnProductsView: View {
                             quantity: 1,
                             maxQuantity: returnableProduct.maxQuantity,
                             lots: LedgerService.outstandingLots(
-                                for: salesman,
+                                for: customer,
                                 product: returnableProduct.product
                             )
                         ))
@@ -164,7 +164,7 @@ struct ReturnProductsView: View {
                 .font(.headline)
                 .foregroundStyle(Color.Theme.ink)
             
-            Text(String(localized: "This salesman hasn't received any products yet, or all products have already been returned."))
+            Text(String(localized: "This customer hasn't received any products yet, or all products have already been returned."))
                 .font(.subheadline)
                 .foregroundStyle(Color.Theme.ink2)
                 .multilineTextAlignment(.center)
@@ -268,7 +268,7 @@ struct ReturnProductsView: View {
         VStack(spacing: Spacing.md) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 HStack {
-                    Text(String(localized: "\(salesman.name) will owe"))
+                    Text(String(localized: "\(customer.name) will owe"))
                         .font(.subheadline)
                         .foregroundStyle(Color.Theme.ink2)
                     
@@ -287,7 +287,7 @@ struct ReturnProductsView: View {
                 }
                 
                 if !lines.isEmpty {
-                    Text(String(localized: "Current \(CurrencyFormatter.string(salesman.balance)) − return \(CurrencyFormatter.string(returnTotal))"))
+                    Text(String(localized: "Current \(CurrencyFormatter.string(customer.balance)) − return \(CurrencyFormatter.string(returnTotal))"))
                         .font(.caption)
                         .foregroundStyle(Color.Theme.ink3)
                 }
@@ -335,7 +335,7 @@ struct ReturnProductsView: View {
         let items = lines.map { ($0.product, $0.quantity) }
         do {
             try LedgerService.recordReturn(
-                from: salesman,
+                from: customer,
                 items: items,
                 attachmentFileName: attachmentFileName,
                 in: modelContext
@@ -538,7 +538,7 @@ private struct ReturnableProductPickerView: View {
 
 #Preview {
     NavigationStack {
-        ReturnProductsView(salesman: Salesman(name: "Ahmed"))
+        ReturnProductsView(customer: Customer(name: "Ahmed"))
     }
-    .modelContainer(for: [Salesman.self, Product.self, Transaction.self, TransactionItem.self])
+    .modelContainer(for: [Customer.self, Product.self, Transaction.self, TransactionItem.self])
 }

@@ -176,14 +176,14 @@ struct ActivityRow: View {
 #Preview {
     List {
         ActivityRow(transaction: {
-            let s = Salesman(name: "Test")
-            let t = Transaction(type: .distribution, amount: 26000, salesman: s)
+            let c = Customer(name: "Test")
+            let t = Transaction(type: .distribution, amount: 26000, customer: c)
             return t
         }())
         
         ActivityRow(transaction: {
-            let s = Salesman(name: "Test")
-            let t = Transaction(type: .payment, amount: -5000, salesman: s, note: "Partial payment")
+            let c = Customer(name: "Test")
+            let t = Transaction(type: .payment, amount: -5000, customer: c, note: "Partial payment")
             return t
         }())
     }

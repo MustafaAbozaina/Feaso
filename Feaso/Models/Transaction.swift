@@ -16,7 +16,7 @@ final class Transaction {
     /// Payment type for distributions (cash or installment). Nil for non-distribution transactions.
     var paymentTypeRaw: String?
     
-    var salesman: Salesman?
+    var customer: Customer?
     
     @Relationship(deleteRule: .cascade, inverse: \TransactionItem.transaction)
     var items: [TransactionItem] = []
@@ -40,7 +40,7 @@ final class Transaction {
     init(
         type: TransactionType,
         amount: Decimal,
-        salesman: Salesman? = nil,
+        customer: Customer? = nil,
         occurredAt: Date = .now,
         note: String? = nil,
         attachmentFileName: String? = nil,
@@ -49,7 +49,7 @@ final class Transaction {
         self.id = UUID()
         self.typeRaw = type.rawValue
         self.amount = amount
-        self.salesman = salesman
+        self.customer = customer
         self.occurredAt = occurredAt
         self.note = note
         self.attachmentFileName = attachmentFileName

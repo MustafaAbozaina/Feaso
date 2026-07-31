@@ -79,13 +79,13 @@ final class FirebaseRealtimeSyncProvider: SyncProvider {
     
     // MARK: - Push Operations
     
-    func push(_ salesman: Salesman) async throws {
-        guard let collection = businessCollection("salesmen") else {
+    func push(_ customer: Customer) async throws {
+        guard let collection = businessCollection("customers") else {
             throw SyncError.noBusinessId
         }
         
-        let firestoreModel = FirestoreSalesman(from: salesman)
-        try collection.document(salesman.id.uuidString).setData(from: firestoreModel)
+        let firestoreModel = FirestoreCustomer(from: customer)
+        try collection.document(customer.id.uuidString).setData(from: firestoreModel)
     }
     
     func push(_ product: Product) async throws {
@@ -144,29 +144,29 @@ final class FirebaseRealtimeSyncProvider: SyncProvider {
         defer { isSyncing = false }
         
         // Maps to track IDs for relationship reconstruction
-        var salesmenMap: [String: Salesman] = [:]
+        var customersMap: [String: Customer] = [:]
         var productsMap: [String: Product] = [:]
         var transactionsMap: [String: Transaction] = [:]
         
-        // Pull salesmen first
-        print("📥 [PULL] Fetching salesmen...")
-        if let collection = businessCollection("salesmen") {
+        // Pull customers first
+        print("📥 [PULL] Fetching customers...")
+        if let collection = businessCollection("customers") {
             let snapshot = try await collection.getDocuments()
-            print("📥 [PULL] Found \(snapshot.documents.count) salesmen documents")
+            print("📥 [PULL] Found \(snapshot.documents.count) customer documents")
             for doc in snapshot.documents {
-                if let firestoreSalesman = try? doc.data(as: FirestoreSalesman.self) {
+                if let firestoreCustomer = try? doc.data(as: FirestoreCustomer.self) {
                     await MainActor.run {
-                        let salesman = firestoreSalesman.toSalesman()
-                        context.insert(salesman)
-                        salesmenMap[firestoreSalesman.id] = salesman
-                        print("📥 [PULL] Inserted salesman: \(salesman.name)")
+                        let customer = firestoreCustomer.toCustomer()
+                        context.insert(customer)
+                        customersMap[firestoreCustomer.id] = customer
+                        print("📥 [PULL] Inserted customer: \(customer.name)")
                     }
                 } else {
-                    print("⚠️ [PULL] Failed to decode salesman doc: \(doc.documentID)")
+                    print("⚠️ [PULL] Failed to decode customer doc: \(doc.documentID)")
                 }
             }
         } else {
-            print("⚠️ [PULL] No salesmen collection (businessId issue?)")
+            print("⚠️ [PULL] No customers collection (businessId issue?)")
         }
         
         // Pull products
@@ -199,10 +199,10 @@ final class FirebaseRealtimeSyncProvider: SyncProvider {
                 if let firestoreTransaction = try? doc.data(as: FirestoreTransaction.self) {
                     await MainActor.run {
                         let transaction = firestoreTransaction.toTransaction()
-                        // Link salesman if exists
-                        if let salesmanId = firestoreTransaction.salesmanId,
-                           let salesman = salesmenMap[salesmanId] {
-                            transaction.salesman = salesman
+                        // Link customer if exists
+                        if let customerId = firestoreTransaction.customerId,
+                           let customer = customersMap[customerId] {
+                            transaction.customer = customer
                         }
                         context.insert(transaction)
                         transactionsMap[firestoreTransaction.id] = transaction
@@ -273,22 +273,22 @@ final class FirebaseRealtimeSyncProvider: SyncProvider {
             }
         }
         
-        print("✅ [PULL] pullAllData() completed - Salesmen: \(salesmenMap.count), Products: \(productsMap.count), Transactions: \(transactionsMap.count)")
+        print("✅ [PULL] pullAllData() completed - Customers: \(customersMap.count), Products: \(productsMap.count), Transactions: \(transactionsMap.count)")
         lastSyncDate = .now
     }
     
     // MARK: - Listeners (Pull)
     
     private func setupListeners() {
-        listenToSalesmen()
+        listenToCustomers()
         listenToProducts()
         listenToTransactions()
         listenToTransactionItems()
         listenToInstallments()
     }
     
-    private func listenToSalesmen() {
-        guard let collection = businessCollection("salesmen") else { return }
+    private func listenToCustomers() {
+        guard let collection = businessCollection("customers") else { return }
         
         let listener = collection.addSnapshotListener { [weak self] snapshot, error in
             guard let changes = snapshot?.documentChanges, error == nil else {
@@ -298,7 +298,7 @@ final class FirebaseRealtimeSyncProvider: SyncProvider {
             
             Task { @MainActor in
                 for change in changes {
-                    self?.handleSalesmanChange(change)
+                    self?.handleCustomerChange(change)
                 }
             }
         }
@@ -306,15 +306,15 @@ final class FirebaseRealtimeSyncProvider: SyncProvider {
     }
     
     @MainActor
-    private func handleSalesmanChange(_ change: DocumentChange) {
+    private func handleCustomerChange(_ change: DocumentChange) {
         guard let context = modelContext else { return }
         
         do {
-            let firestoreSalesman = try change.document.data(as: FirestoreSalesman.self)
-            guard let uuid = UUID(uuidString: firestoreSalesman.id) else { return }
+            let firestoreCustomer = try change.document.data(as: FirestoreCustomer.self)
+            guard let uuid = UUID(uuidString: firestoreCustomer.id) else { return }
             
             // Check if exists locally
-            let descriptor = FetchDescriptor<Salesman>(
+            let descriptor = FetchDescriptor<Customer>(
                 predicate: #Predicate { $0.id == uuid }
             )
             let existing = try context.fetch(descriptor).first
@@ -322,12 +322,12 @@ final class FirebaseRealtimeSyncProvider: SyncProvider {
             switch change.type {
             case .added:
                 if existing == nil {
-                    let salesman = firestoreSalesman.toSalesman()
-                    context.insert(salesman)
+                    let customer = firestoreCustomer.toCustomer()
+                    context.insert(customer)
                 }
             case .modified:
-                if let salesman = existing {
-                    firestoreSalesman.update(salesman)
+                if let customer = existing {
+                    firestoreCustomer.update(customer)
                 }
             case .removed:
                 // We soft-delete, so just mark as deleted
@@ -426,13 +426,13 @@ final class FirebaseRealtimeSyncProvider: SyncProvider {
             case .added:
                 if existing == nil {
                     let transaction = firestoreTransaction.toTransaction()
-                    // Link salesman if exists
-                    if let salesmanId = firestoreTransaction.salesmanId,
-                       let salesmanUUID = UUID(uuidString: salesmanId) {
-                        let salesmanDescriptor = FetchDescriptor<Salesman>(
-                            predicate: #Predicate { $0.id == salesmanUUID }
+                    // Link customer if exists
+                    if let customerId = firestoreTransaction.customerId,
+                       let customerUUID = UUID(uuidString: customerId) {
+                        let customerDescriptor = FetchDescriptor<Customer>(
+                            predicate: #Predicate { $0.id == customerUUID }
                         )
-                        transaction.salesman = try context.fetch(salesmanDescriptor).first
+                        transaction.customer = try context.fetch(customerDescriptor).first
                     }
                     context.insert(transaction)
                     print("📥 [LISTENER] Inserted transaction: \(firestoreTransaction.id)")
@@ -630,22 +630,22 @@ final class FirebaseRealtimeSyncProvider: SyncProvider {
         }
         
         return await MainActor.run {
-            let salesmenCount = (try? context.fetchCount(FetchDescriptor<Salesman>())) ?? 0
+            let customersCount = (try? context.fetchCount(FetchDescriptor<Customer>())) ?? 0
             let productsCount = (try? context.fetchCount(FetchDescriptor<Product>())) ?? 0
-            print("🔍 [SYNC] Local counts - Salesmen: \(salesmenCount), Products: \(productsCount)")
-            return salesmenCount > 0 || productsCount > 0
+            print("🔍 [SYNC] Local counts - Customers: \(customersCount), Products: \(productsCount)")
+            return customersCount > 0 || productsCount > 0
         }
     }
     
     private func pushAllLocalData() async throws {
         guard let context = modelContext else { return }
         
-        // Push all salesmen
-        let salesmen = try await MainActor.run {
-            try context.fetch(FetchDescriptor<Salesman>())
+        // Push all customers
+        let customers = try await MainActor.run {
+            try context.fetch(FetchDescriptor<Customer>())
         }
-        for salesman in salesmen {
-            try await push(salesman)
+        for customer in customers {
+            try await push(customer)
         }
         
         // Push all products

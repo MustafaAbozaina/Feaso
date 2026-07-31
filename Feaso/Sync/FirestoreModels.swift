@@ -43,9 +43,9 @@ struct FirestoreBusiness: Codable {
     }
 }
 
-// MARK: - Firestore Salesman
+// MARK: - Firestore Customer
 
-struct FirestoreSalesman: Codable {
+struct FirestoreCustomer: Codable {
     let id: String
     var name: String
     var phone: String?
@@ -54,30 +54,30 @@ struct FirestoreSalesman: Codable {
     var deletedAt: Timestamp?
     var updatedAt: Timestamp
     
-    init(from salesman: Salesman) {
-        self.id = salesman.id.uuidString
-        self.name = salesman.name
-        self.phone = salesman.phone
-        self.notes = salesman.notes
-        self.createdAt = Timestamp(date: salesman.createdAt)
-        self.deletedAt = salesman.deletedAt.map { Timestamp(date: $0) }
+    init(from customer: Customer) {
+        self.id = customer.id.uuidString
+        self.name = customer.name
+        self.phone = customer.phone
+        self.notes = customer.notes
+        self.createdAt = Timestamp(date: customer.createdAt)
+        self.deletedAt = customer.deletedAt.map { Timestamp(date: $0) }
         self.updatedAt = Timestamp(date: .now)
     }
     
-    func toSalesman() -> Salesman {
-        let salesman = Salesman(name: name, phone: phone, notes: notes)
+    func toCustomer() -> Customer {
+        let customer = Customer(name: name, phone: phone, notes: notes)
         // Overwrite auto-generated values
-        salesman.id = UUID(uuidString: id) ?? UUID()
-        salesman.createdAt = createdAt.dateValue()
-        salesman.deletedAt = deletedAt?.dateValue()
-        return salesman
+        customer.id = UUID(uuidString: id) ?? UUID()
+        customer.createdAt = createdAt.dateValue()
+        customer.deletedAt = deletedAt?.dateValue()
+        return customer
     }
     
-    func update(_ salesman: Salesman) {
-        salesman.name = name
-        salesman.phone = phone
-        salesman.notes = notes
-        salesman.deletedAt = deletedAt?.dateValue()
+    func update(_ customer: Customer) {
+        customer.name = name
+        customer.phone = phone
+        customer.notes = notes
+        customer.deletedAt = deletedAt?.dateValue()
     }
 }
 
@@ -145,7 +145,7 @@ struct FirestoreTransaction: Codable {
     var createdAt: Timestamp?        // Optional for backward compatibility
     var attachmentFileName: String?
     var paymentTypeRaw: String?
-    var salesmanId: String?
+    var customerId: String?
     var reversedById: String?
     var reversesId: String?
     var updatedAt: Timestamp?        // Optional for backward compatibility
@@ -159,7 +159,7 @@ struct FirestoreTransaction: Codable {
         self.createdAt = Timestamp(date: transaction.createdAt)
         self.attachmentFileName = transaction.attachmentFileName
         self.paymentTypeRaw = transaction.paymentTypeRaw
-        self.salesmanId = transaction.salesman?.id.uuidString
+        self.customerId = transaction.customer?.id.uuidString
         self.reversedById = transaction.reversedBy?.id.uuidString
         self.reversesId = transaction.reverses?.id.uuidString
         self.updatedAt = Timestamp(date: .now)
@@ -175,7 +175,7 @@ struct FirestoreTransaction: Codable {
         createdAt: Date,
         attachmentFileName: String?,
         paymentTypeRaw: String?,
-        salesmanId: String?,
+        customerId: String?,
         reversedById: String?,
         reversesId: String?
     ) {
@@ -187,7 +187,7 @@ struct FirestoreTransaction: Codable {
         self.createdAt = Timestamp(date: createdAt)
         self.attachmentFileName = attachmentFileName
         self.paymentTypeRaw = paymentTypeRaw
-        self.salesmanId = salesmanId
+        self.customerId = customerId
         self.reversedById = reversedById
         self.reversesId = reversesId
         self.updatedAt = Timestamp(date: .now)
@@ -200,7 +200,7 @@ struct FirestoreTransaction: Codable {
         let transaction = Transaction(
             type: transactionType,
             amount: Decimal(string: amount) ?? 0,
-            salesman: nil, // Set separately
+            customer: nil, // Set separately
             occurredAt: occurredAt.dateValue(),
             note: note,
             attachmentFileName: attachmentFileName,
@@ -208,7 +208,7 @@ struct FirestoreTransaction: Codable {
         )
         transaction.id = UUID(uuidString: id) ?? UUID()
         transaction.createdAt = createdAt?.dateValue() ?? Date()
-        // Relationships (salesman, items, installments) are set separately
+        // Relationships (customer, items, installments) are set separately
         return transaction
     }
 }

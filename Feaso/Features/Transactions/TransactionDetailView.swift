@@ -115,9 +115,9 @@ struct TransactionDetailView: View {
             }
         }
         .sheet(isPresented: $showingInstallmentsList) {
-            if let salesman = transaction.salesman {
+            if let customer = transaction.customer {
                 NavigationStack {
-                    InstallmentsListView(salesman: salesman, filterTransaction: transaction)
+                    InstallmentsListView(customer: customer, filterTransaction: transaction)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button(String(localized: "Done")) {
@@ -180,22 +180,22 @@ struct TransactionDetailView: View {
             break
         }
         
-        guard let salesman = transaction.salesman else {
+        guard let customer = transaction.customer else {
             return ""
         }
         
         switch transaction.type {
         case .payment:
-            return String(localized: "Payment received from \(salesman.name)")
+            return String(localized: "Payment received from \(customer.name)")
         case .distribution:
-            return String(localized: "Products given to \(salesman.name)")
+            return String(localized: "Products sold to \(customer.name)")
         case .return:
-            return String(localized: "Products returned by \(salesman.name)")
+            return String(localized: "Products returned by \(customer.name)")
         case .adjustment:
             if transaction.isReversal {
-                return String(localized: "Reversal for \(salesman.name)")
+                return String(localized: "Reversal for \(customer.name)")
             }
-            return String(localized: "Balance adjustment for \(salesman.name)")
+            return String(localized: "Balance adjustment for \(customer.name)")
         case .stockReceipt:
             return "" // Already handled above
         }
@@ -355,11 +355,11 @@ struct TransactionDetailView: View {
                 Divider()
                     .padding(.horizontal, Spacing.md)
                 
-                // Salesman
-                if let salesman = transaction.salesman {
+                // Customer
+                if let customer = transaction.customer {
                     DetailRow(
-                        label: String(localized: "Salesman"),
-                        value: salesman.name
+                        label: String(localized: "Customer"),
+                        value: customer.name
                     )
                     
                     Divider()
@@ -810,8 +810,8 @@ private struct ReceiptShareSheet: UIViewControllerRepresentable {
 #Preview("Distribution") {
     NavigationStack {
         TransactionDetailView(transaction: {
-            let s = Salesman(name: "Ahmed")
-            let t = Transaction(type: .distribution, amount: 26000, salesman: s)
+            let c = Customer(name: "Ahmed")
+            let t = Transaction(type: .distribution, amount: 26000, customer: c)
             return t
         }())
     }
@@ -820,8 +820,8 @@ private struct ReceiptShareSheet: UIViewControllerRepresentable {
 #Preview("Payment") {
     NavigationStack {
         TransactionDetailView(transaction: {
-            let s = Salesman(name: "Ahmed")
-            let t = Transaction(type: .payment, amount: -5000, salesman: s, note: "Partial payment - cash")
+            let c = Customer(name: "Ahmed")
+            let t = Transaction(type: .payment, amount: -5000, customer: c, note: "Partial payment - cash")
             return t
         }())
     }

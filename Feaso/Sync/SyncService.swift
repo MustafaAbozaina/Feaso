@@ -74,11 +74,11 @@ final class SyncService {
     
     // MARK: - Push Operations
     
-    /// Push a salesman to remote storage
-    func push(_ salesman: Salesman) async {
+    /// Push a customer to remote storage
+    func push(_ customer: Customer) async {
         guard AuthService.shared.isAuthenticated else { return }
         do {
-            try await provider.push(salesman)
+            try await provider.push(customer)
         } catch {
             // Errors are captured in provider.syncError
             // Firestore SDK will retry when back online
