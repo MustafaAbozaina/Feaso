@@ -426,15 +426,9 @@ private struct ReturnQuantityStepperView: View {
     private var isAtMax: Bool { quantity >= maxQuantity }
     private var isAtMin: Bool { quantity <= 1 }
     
-    private func triggerLightHaptic() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
-    }
-    
     var body: some View {
         HStack(spacing: 0) {
             Button {
-                triggerLightHaptic()
                 onDecrement()
             } label: {
                 Image(systemName: "minus")
@@ -442,8 +436,8 @@ private struct ReturnQuantityStepperView: View {
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.borderless)
-            .tint(isAtMin ? Color.Theme.ink3 : Color.Theme.ink)
+            .buttonStyle(.plain)
+            .foregroundStyle(isAtMin ? Color.Theme.ink3 : Color.Theme.ink)
             .disabled(isAtMin)
             
             Text("\(quantity)")
@@ -453,7 +447,6 @@ private struct ReturnQuantityStepperView: View {
                 .frame(minWidth: 32)
             
             Button {
-                triggerLightHaptic()
                 onIncrement()
             } label: {
                 Image(systemName: "plus")
@@ -461,8 +454,8 @@ private struct ReturnQuantityStepperView: View {
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.borderless)
-            .tint(isAtMax ? Color.Theme.ink3 : Color.Theme.ink)
+            .buttonStyle(.plain)
+            .foregroundStyle(isAtMax ? Color.Theme.ink3 : Color.Theme.ink)
             .disabled(isAtMax)
         }
         .background(Color.Theme.surface2)

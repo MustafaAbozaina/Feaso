@@ -389,3 +389,44 @@
 "Discard Sale?" = "تجاهل البيع؟";
 "Confirm Sale" = "تأكيد البيع";
 
+// MARK: - Dashboard / Home
+"Home" = "الرئيسية";
+"See All" = "عرض الكل";
+"Cash" = "نقدي";
+"Credit" = "آجل";
+"Sales" = "المبيعات";
+"Collections Due" = "التحصيلات المستحقة";
+"No payments due" = "لا توجد دفعات مستحقة";
+"%lld overdue" = "%lld متأخرة";
+"%lld due this week" = "%lld مستحقة هذا الأسبوع";
+"Outstanding" = "المستحقات";
+"Total Owed" = "إجمالي المديونية";
+"Overdue" = "متأخر";
+"Inventory" = "المخزون";
+"%lld products" = "%lld منتج";
+"%lld low stock" = "%lld مخزون منخفض";
+"This Month" = "هذا الشهر";
+"Collected" = "تم تحصيله";
+
+// MARK: - Today Transactions
+"No transactions today" = "لا توجد معاملات اليوم";
+"Transactions" = "المعاملات";
+"Cash Sales" = "مبيعات نقدية";
+"Credit Given" = "مبيعات آجلة";
+"Sold to %@" = "بيع إلى %@";
+"Payment from %@" = "دفعة من %@";
+"Return from %@" = "مرتجع من %@";
+
+// MARK: - Monthly Report
+"Monthly Report" = "التقرير الشهري";
+"Total Sales" = "إجمالي المبيعات";
+"%lld sales" = "%lld عملية بيع";
+"Credit Sales" = "مبيعات آجلة";
+"Returns" = "المرتجعات";
+"Collection Progress" = "تقدم التحصيل";
+"%lld payments" = "%lld دفعة";
+"Weekly Breakdown" = "التفاصيل الأسبوعية";
+"Week %lld" = "الأسبوع %lld";
+"Sales:" = "المبيعات:";
+"Collected:" = "المحصّل:";
+
