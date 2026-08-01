@@ -113,6 +113,10 @@ struct RootView: View {
             .tag(Tab.settings)
         }
         .tint(Color.Theme.accent)
+        .onAppear {
+            // Ensure Home tab is selected when main view first appears (after login)
+            selectedTab = .home
+        }
         .onReceive(NotificationCenter.default.publisher(for: .switchTab)) { notification in
             if let tab = notification.userInfo?["tab"] as? Tab {
                 selectedTab = tab
