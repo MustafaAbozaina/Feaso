@@ -379,22 +379,18 @@ private struct QuickSaleQuantityStepperView: View {
         return quantity > threshold
     }
     
-    private func triggerLightHaptic() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
-    }
-    
     var body: some View {
         HStack(spacing: 0) {
             Button {
-                triggerLightHaptic()
                 onDecrement()
             } label: {
                 Image(systemName: "minus")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(quantity > 1 ? Color.Theme.ink : Color.Theme.ink3)
                     .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .disabled(quantity <= 1)
             
             Text("\(quantity)")
@@ -404,14 +400,15 @@ private struct QuickSaleQuantityStepperView: View {
                 .frame(width: 32, height: 32)
             
             Button {
-                triggerLightHaptic()
                 onIncrement()
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.Theme.ink)
                     .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
         }
         .background(Color.Theme.surface2)
         .clipShape(RoundedRectangle(cornerRadius: Radius.sm))

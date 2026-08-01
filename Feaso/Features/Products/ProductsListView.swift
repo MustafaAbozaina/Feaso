@@ -10,7 +10,6 @@ struct ProductsListView: View {
     
     @State private var showingAddSheet = false
     @State private var showingReceiveStock = false
-    @State private var showingQuickSale = false
     @State private var selectedProduct: Product?
     
     private var inventoryValue: Decimal {
@@ -24,35 +23,11 @@ struct ProductsListView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Group {
-                if products.isEmpty {
-                    emptyState
-                } else {
-                    productsList
-                }
-            }
-            
-            // Floating Quick Sale Button
-            if !products.isEmpty {
-                Button {
-                    showingQuickSale = true
-                } label: {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "bolt.fill")
-                        Text(String(localized: "Quick Sale"))
-                    }
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.vertical, Spacing.md)
-                    .background(Color.Theme.accent)
-                    .clipShape(Capsule())
-                    .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
-                }
-                .padding(.trailing, Spacing.lg)
-                .padding(.bottom, Spacing.lg)
+        Group {
+            if products.isEmpty {
+                emptyState
+            } else {
+                productsList
             }
         }
         .navigationTitle(String(localized: "Products"))
@@ -89,11 +64,6 @@ struct ProductsListView: View {
         .sheet(isPresented: $showingReceiveStock) {
             NavigationStack {
                 ReceiveStockView()
-            }
-        }
-        .sheet(isPresented: $showingQuickSale) {
-            NavigationStack {
-                QuickSaleView()
             }
         }
     }

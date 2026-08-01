@@ -390,3 +390,44 @@
 "Discard Sale?" = "Discard Sale?";
 "Confirm Sale" = "Confirm Sale";
 
+// MARK: - Dashboard / Home
+"Home" = "Home";
+"See All" = "See All";
+"Cash" = "Cash";
+"Credit" = "Credit";
+"Sales" = "Sales";
+"Collections Due" = "Collections Due";
+"No payments due" = "No payments due";
+"%lld overdue" = "%lld overdue";
+"%lld due this week" = "%lld due this week";
+"Outstanding" = "Outstanding";
+"Total Owed" = "Total Owed";
+"Overdue" = "Overdue";
+"Inventory" = "Inventory";
+"%lld products" = "%lld products";
+"%lld low stock" = "%lld low stock";
+"This Month" = "This Month";
+"Collected" = "Collected";
+
+// MARK: - Today Transactions
+"No transactions today" = "No transactions today";
+"Transactions" = "Transactions";
+"Cash Sales" = "Cash Sales";
+"Credit Given" = "Credit Given";
+"Sold to %@" = "Sold to %@";
+"Payment from %@" = "Payment from %@";
+"Return from %@" = "Return from %@";
+
+// MARK: - Monthly Report
+"Monthly Report" = "Monthly Report";
+"Total Sales" = "Total Sales";
+"%lld sales" = "%lld sales";
+"Credit Sales" = "Credit Sales";
+"Returns" = "Returns";
+"Collection Progress" = "Collection Progress";
+"%lld payments" = "%lld payments";
+"Weekly Breakdown" = "Weekly Breakdown";
+"Week %lld" = "Week %lld";
+"Sales:" = "Sales:";
+"Collected:" = "Collected:";
+

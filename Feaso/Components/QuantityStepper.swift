@@ -11,15 +11,9 @@ struct QuantityStepper: View {
         return quantity > threshold
     }
     
-    private func triggerLightHaptic() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
-    }
-    
     var body: some View {
         HStack(spacing: 0) {
             Button {
-                triggerLightHaptic()
                 if quantity > 1 {
                     quantity -= 1
                 } else {
@@ -29,8 +23,10 @@ struct QuantityStepper: View {
                 Image(systemName: "minus")
                     .font(.system(size: 14, weight: .semibold))
                     .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
-            .tint(Color.Theme.ink)
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.Theme.ink)
             
             Text("\(quantity)")
                 .font(.body)
@@ -39,14 +35,15 @@ struct QuantityStepper: View {
                 .frame(minWidth: 32)
             
             Button {
-                triggerLightHaptic()
                 quantity += 1
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .semibold))
                     .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
             }
-            .tint(Color.Theme.ink)
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.Theme.ink)
         }
         .background(Color.Theme.surface2)
         .clipShape(RoundedRectangle(cornerRadius: Radius.sm))

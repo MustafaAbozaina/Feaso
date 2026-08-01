@@ -10,6 +10,9 @@ struct RootView: View {
     /// Track the previous businessId to detect changes
     @State private var previousBusinessId: String?
     
+    /// Selected tab for programmatic navigation
+    @State private var selectedTab: Tab = .home
+    
     /// Show loading if auth is loading OR if we're doing initial sync
     private var isLoading: Bool {
         authService.isLoading || (authService.isAuthenticated && syncService.isSyncing && syncService.lastSyncDate == nil)
@@ -70,18 +73,28 @@ struct RootView: View {
     }
     
     private var mainTabView: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
+            NavigationStack {
+                HomeView()
+            }
+            .tabItem {
+                Label(String(localized: "Home"), systemImage: "house.fill")
+            }
+            .tag(Tab.home)
+            
             NavigationStack {
                 CustomersListView()
             }
             .tabItem {
                 Label(String(localized: "Customers"), systemImage: "person.2.fill")
             }
+            .tag(Tab.customers)
             
             CollectionsView()
             .tabItem {
                 Label(String(localized: "Collections"), systemImage: "banknote.fill")
             }
+            .tag(Tab.collections)
             
             NavigationStack {
                 ProductsListView()
@@ -89,6 +102,7 @@ struct RootView: View {
             .tabItem {
                 Label(String(localized: "Products"), systemImage: "shippingbox.fill")
             }
+            .tag(Tab.products)
             
             NavigationStack {
                 SettingsView()
@@ -96,8 +110,14 @@ struct RootView: View {
             .tabItem {
                 Label(String(localized: "Settings"), systemImage: "gearshape.fill")
             }
+            .tag(Tab.settings)
         }
         .tint(Color.Theme.accent)
+        .onReceive(NotificationCenter.default.publisher(for: .switchTab)) { notification in
+            if let tab = notification.userInfo?["tab"] as? Tab {
+                selectedTab = tab
+            }
+        }
     }
 }
 
