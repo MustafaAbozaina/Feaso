@@ -14,6 +14,7 @@ struct ProductEditorView: View {
     @State private var openingStockText: String = ""
     @State private var reorderThresholdText: String = ""
     @State private var showingDeleteAlert = false
+    @State private var showingTransactions = false
     
     private var isEditing: Bool {
         product != nil
@@ -127,6 +128,21 @@ struct ProductEditorView: View {
             }
             
             if isEditing {
+                Section {
+                    NavigationLink {
+                        TransactionsView(product: product)
+                    } label: {
+                        HStack {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .foregroundStyle(Color.Theme.accent)
+                            Text(String(localized: "View Transaction History"))
+                            Spacer()
+                            Text("\(product?.transactionItems.count ?? 0)")
+                                .foregroundStyle(Color.Theme.ink2)
+                        }
+                    }
+                }
+                
                 Section {
                     Button(role: .destructive) {
                         showingDeleteAlert = true

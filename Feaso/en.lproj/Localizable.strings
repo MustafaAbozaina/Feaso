@@ -418,6 +418,21 @@
 "Payment from %@" = "Payment from %@";
 "Return from %@" = "Return from %@";
 
+// MARK: - Transactions View Filters
+"Yesterday" = "Yesterday";
+"Custom" = "Custom";
+"All Products" = "All Products";
+"All" = "All";
+"No transactions found" = "No transactions found";
+"Try adjusting your filters" = "Try adjusting your filters";
+"Select Dates" = "Select Dates";
+"Start Date" = "Start Date";
+"End Date" = "End Date";
+"Select Product" = "Select Product";
+"Units" = "Units";
+"units" = "units";
+"View Transaction History" = "View Transaction History";
+
 // MARK: - Monthly Report
 "Monthly Report" = "Monthly Report";
 "Total Sales" = "Total Sales";

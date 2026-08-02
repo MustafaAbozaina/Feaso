@@ -152,7 +152,7 @@ struct HomeView: View {
     private var todaySection: some View {
         DashboardSection(
             title: String(localized: "Today"),
-            destination: TodayTransactionsView()
+            destination: TransactionsView()
         ) {
             HStack(spacing: Spacing.lg) {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
@@ -402,7 +402,7 @@ private struct DashboardSection<Content: View, Destination: View>: View {
                         Text(String(localized: "See All"))
                             .font(.subheadline)
                             .foregroundStyle(Color.Theme.accent)
-                        Image(systemName: "chevron.right")
+                        Image(systemName: "chevron.forward")
                             .font(.caption)
                             .foregroundStyle(Color.Theme.accent)
                     }
@@ -446,7 +446,7 @@ private struct DashboardSectionWithTabNavigation<Content: View>: View {
                         Text(String(localized: "See All"))
                             .font(.subheadline)
                             .foregroundStyle(Color.Theme.accent)
-                        Image(systemName: "chevron.right")
+                        Image(systemName: "chevron.forward")
                             .font(.caption)
                             .foregroundStyle(Color.Theme.accent)
                     }

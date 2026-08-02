@@ -417,6 +417,21 @@
 "Payment from %@" = "دفعة من %@";
 "Return from %@" = "مرتجع من %@";
 
+// MARK: - Transactions View Filters
+"Yesterday" = "أمس";
+"Custom" = "مخصص";
+"All Products" = "جميع المنتجات";
+"All" = "الكل";
+"No transactions found" = "لا توجد معاملات";
+"Try adjusting your filters" = "جرّب تعديل الفلاتر";
+"Select Dates" = "اختر التواريخ";
+"Start Date" = "تاريخ البداية";
+"End Date" = "تاريخ النهاية";
+"Select Product" = "اختر منتج";
+"Units" = "وحدات";
+"units" = "وحدات";
+"View Transaction History" = "عرض سجل المعاملات";
+
 // MARK: - Monthly Report
 "Monthly Report" = "التقرير الشهري";
 "Total Sales" = "إجمالي المبيعات";
