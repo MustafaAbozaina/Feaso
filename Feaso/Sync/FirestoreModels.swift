@@ -89,8 +89,9 @@ struct FirestoreProduct: Codable {
     var costPrice: String
     var cashPrice: String
     var installmentPrice: String
-    var openingStock: Int
-    var reorderThreshold: Int?
+    var openingStock: String
+    var reorderThreshold: String?
+    var unitRaw: String?
     var createdAt: Timestamp
     var deletedAt: Timestamp?
     var updatedAt: Timestamp
@@ -101,21 +102,24 @@ struct FirestoreProduct: Codable {
         self.costPrice = "\(product.costPrice)"
         self.cashPrice = "\(product.cashPrice)"
         self.installmentPrice = "\(product.installmentPrice)"
-        self.openingStock = product.openingStock
-        self.reorderThreshold = product.reorderThreshold
+        self.openingStock = "\(product.openingStock)"
+        self.reorderThreshold = product.reorderThreshold.map { "\($0)" }
+        self.unitRaw = product.unitRaw
         self.createdAt = Timestamp(date: product.createdAt)
         self.deletedAt = product.deletedAt.map { Timestamp(date: $0) }
         self.updatedAt = Timestamp(date: .now)
     }
     
     func toProduct() -> Product {
+        let unit = unitRaw.flatMap { ProductUnit(rawValue: $0) } ?? .piece
         let product = Product(
             name: name,
             costPrice: Decimal(string: costPrice) ?? 0,
             cashPrice: Decimal(string: cashPrice) ?? 0,
             installmentPrice: Decimal(string: installmentPrice),
-            openingStock: openingStock,
-            reorderThreshold: reorderThreshold
+            openingStock: Decimal(string: openingStock) ?? 0,
+            reorderThreshold: reorderThreshold.flatMap { Decimal(string: $0) },
+            unit: unit
         )
         product.id = UUID(uuidString: id) ?? UUID()
         product.createdAt = createdAt.dateValue()
@@ -128,8 +132,9 @@ struct FirestoreProduct: Codable {
         product.costPrice = Decimal(string: costPrice) ?? product.costPrice
         product.cashPrice = Decimal(string: cashPrice) ?? product.cashPrice
         product.installmentPrice = Decimal(string: installmentPrice) ?? product.installmentPrice
-        product.openingStock = openingStock
-        product.reorderThreshold = reorderThreshold
+        product.openingStock = Decimal(string: openingStock) ?? product.openingStock
+        product.reorderThreshold = reorderThreshold.flatMap { Decimal(string: $0) }
+        // Note: unit is NOT updated - it's immutable after creation
         product.deletedAt = deletedAt?.dateValue()
     }
 }
@@ -217,7 +222,7 @@ struct FirestoreTransaction: Codable {
 
 struct FirestoreTransactionItem: Codable {
     let id: String
-    var quantity: Int
+    var quantity: String
     var unitPrice: String
     var transactionId: String
     var productId: String
@@ -225,7 +230,7 @@ struct FirestoreTransactionItem: Codable {
     
     init(from item: TransactionItem, transactionId: UUID) {
         self.id = item.id.uuidString
-        self.quantity = item.quantity
+        self.quantity = "\(item.quantity)"
         self.unitPrice = "\(item.unitPrice)"
         self.transactionId = transactionId.uuidString
         self.productId = item.product?.id.uuidString ?? ""
@@ -233,7 +238,7 @@ struct FirestoreTransactionItem: Codable {
     }
     
     /// Direct initializer for when we have raw values
-    init(id: String, quantity: Int, unitPrice: String, transactionId: String, productId: String) {
+    init(id: String, quantity: String, unitPrice: String, transactionId: String, productId: String) {
         self.id = id
         self.quantity = quantity
         self.unitPrice = unitPrice
@@ -245,7 +250,7 @@ struct FirestoreTransactionItem: Codable {
     func toTransactionItem(product: Product) -> TransactionItem {
         let item = TransactionItem(
             product: product,
-            quantity: quantity,
+            quantity: Decimal(string: quantity) ?? 0,
             unitPriceOverride: Decimal(string: unitPrice) ?? 0
         )
         item.id = UUID(uuidString: id) ?? UUID()

@@ -18,8 +18,8 @@ struct ReceiveStockView: View {
         lines.reduce(Decimal(0)) { $0 + $1.lineTotal }
     }
     
-    private var totalUnits: Int {
-        lines.reduce(0) { $0 + $1.quantity }
+    private var totalUnits: Decimal {
+        lines.reduce(Decimal(0)) { $0 + $1.quantity }
     }
     
     private var excludedProductIDs: Set<UUID> {
@@ -50,7 +50,8 @@ struct ReceiveStockView: View {
             NavigationStack {
                 StockReceiptProductPicker(
                     onSelect: { product in
-                        lines.append(StockReceiptLine(product: product, quantity: 1))
+                        let initialQuantity = product.unit.defaultStep
+                        lines.append(StockReceiptLine(product: product, quantity: initialQuantity))
                     },
                     excludedProductIDs: excludedProductIDs
                 )
@@ -227,7 +228,7 @@ struct ReceiveStockView: View {
                 }
                 
                 if !lines.isEmpty {
-                    Text(String(localized: "\(totalUnits) units across \(lines.count) products"))
+                    Text(String(localized: "\(lines.count) products"))
                         .font(.caption)
                         .foregroundStyle(Color.Theme.ink3)
                 }
@@ -256,7 +257,7 @@ struct ReceiveStockView: View {
         lines.removeAll { $0.id == id }
     }
     
-    private func updateQuantity(for id: UUID, to newQuantity: Int) {
+    private func updateQuantity(for id: UUID, to newQuantity: Decimal) {
         if let index = lines.firstIndex(where: { $0.id == id }) {
             lines[index].quantity = newQuantity
         }
@@ -292,19 +293,25 @@ struct StockReceiptLine: Identifiable {
     let product: Product
     let productName: String
     let productCostPrice: Decimal
-    let currentStock: Int
-    var quantity: Int
+    let currentStock: Decimal
+    let productUnit: ProductUnit
+    var quantity: Decimal
     
-    init(product: Product, quantity: Int) {
+    init(product: Product, quantity: Decimal) {
         self.product = product
         self.productName = product.name
         self.productCostPrice = product.costPrice
         self.currentStock = product.currentStock
+        self.productUnit = product.unit
         self.quantity = quantity
     }
     
     var lineTotal: Decimal {
-        Decimal(quantity) * productCostPrice
+        quantity * productCostPrice
+    }
+    
+    var formattedStock: String {
+        productUnit.formatWithSymbol(currentStock)
     }
 }
 
@@ -312,45 +319,28 @@ struct StockReceiptLine: Identifiable {
 
 private struct StockReceiptItemCard: View {
     let line: StockReceiptLine
-    let onQuantityChange: (Int) -> Void
+    let onQuantityChange: (Decimal) -> Void
+    
+    @State private var localQuantity: Decimal
+    
+    init(line: StockReceiptLine, onQuantityChange: @escaping (Decimal) -> Void) {
+        self.line = line
+        self.onQuantityChange = onQuantityChange
+        self._localQuantity = State(initialValue: line.quantity)
+    }
     
     var body: some View {
         HStack(spacing: Spacing.md) {
             VStack {
-                // Quantity stepper
-                HStack(spacing: 0) {
-                    Button {
-                        if line.quantity > 1 {
-                            onQuantityChange(line.quantity - 1)
-                        }
-                    } label: {
-                        Image(systemName: "minus")
-                            .font(.system(size: 14, weight: .semibold))
-                            .frame(width: 36, height: 36)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.Theme.ink)
-                    
-                    Text("\(line.quantity)")
-                        .font(.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.Theme.ink)
-                        .frame(minWidth: 32)
-                    
-                    Button {
-                        onQuantityChange(line.quantity + 1)
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 14, weight: .semibold))
-                            .frame(width: 36, height: 36)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.Theme.ink)
+                QuantityStepper(
+                    quantity: $localQuantity,
+                    unit: line.productUnit,
+                    onRemove: {},
+                    warningThreshold: nil
+                )
+                .onChange(of: localQuantity) { _, newValue in
+                    onQuantityChange(newValue)
                 }
-                .background(Color.Theme.surface2)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
                 
                 Spacer()
                 
@@ -379,7 +369,8 @@ private struct StockReceiptItemCard: View {
                     Text(CurrencyFormatter.symbol)
                     Text(String(localized: "each"))
                     Text("·")
-                    Text(String(localized: "\(line.currentStock) in stock"))
+                    Text(line.formattedStock)
+                    Text(String(localized: "in stock"))
                 }
                 .font(.caption)
                 .foregroundStyle(Color.Theme.ink3)
@@ -463,7 +454,8 @@ private struct StockReceiptProductRow: View {
                     Text(CurrencyFormatter.string(product.costPrice))
                     Text(CurrencyFormatter.symbol)
                     Text("·")
-                    Text(String(localized: "\(product.currentStock) in stock"))
+                    Text(product.formattedStock)
+                    Text(String(localized: "in stock"))
                 }
                 .font(.caption)
                 .foregroundStyle(Color.Theme.ink2)

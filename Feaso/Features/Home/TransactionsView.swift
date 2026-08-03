@@ -177,11 +177,11 @@ struct TransactionsView: View {
         filteredTransactions.filter { $0.type == .payment }.count
     }
     
-    private var totalUnits: Int {
+    private var totalUnits: Decimal {
         filteredTransactions
             .filter { $0.type == .distribution }
             .flatMap { $0.items }
-            .reduce(0) { $0 + $1.quantity }
+            .reduce(Decimal(0)) { $0 + $1.quantity }
     }
     
     private var uniqueCustomersCount: Int {

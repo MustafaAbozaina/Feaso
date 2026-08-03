@@ -14,7 +14,8 @@ struct ProductsListView: View {
     
     private var inventoryValue: Decimal {
         products.reduce(Decimal(0)) { sum, product in
-            sum + (Decimal(max(0, product.currentStock)) * product.costPrice)
+            let stock = product.currentStock > 0 ? product.currentStock : Decimal(0)
+            return sum + (stock * product.costPrice)
         }
     }
     
@@ -140,7 +141,7 @@ private struct ProductRow: View {
             
             Spacer()
             
-            StockPill(stock: product.currentStock, status: product.stockStatus)
+            StockPill(stock: product.currentStock, status: product.stockStatus, unit: product.unit)
         }
         .padding(.vertical, Spacing.sm)
     }

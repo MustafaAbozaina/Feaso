@@ -1,8 +1,15 @@
 import SwiftUI
 
 struct StockPill: View {
-    let stock: Int
+    let stock: Decimal
     let status: StockStatus
+    let unit: ProductUnit
+    
+    init(stock: Decimal, status: StockStatus, unit: ProductUnit = .piece) {
+        self.stock = stock
+        self.status = status
+        self.unit = unit
+    }
     
     private var backgroundColor: Color {
         switch status {
@@ -30,7 +37,7 @@ struct StockPill: View {
         if stock <= 0 {
             return String(localized: "Out of stock")
         }
-        return String(localized: "\(stock) in stock")
+        return unit.formatWithSymbol(stock) + " " + String(localized: "in stock")
     }
     
     var body: some View {
@@ -47,9 +54,9 @@ struct StockPill: View {
 
 #Preview {
     VStack(spacing: 16) {
-        StockPill(stock: 50, status: .healthy)
-        StockPill(stock: 3, status: .low)
-        StockPill(stock: 0, status: .outOfStock)
+        StockPill(stock: 50, status: .healthy, unit: .piece)
+        StockPill(stock: Decimal(string: "2.5")!, status: .low, unit: .liter)
+        StockPill(stock: 0, status: .outOfStock, unit: .kilogram)
     }
     .padding()
 }

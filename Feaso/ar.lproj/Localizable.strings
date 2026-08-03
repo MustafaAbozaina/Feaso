@@ -445,3 +445,22 @@
 "Sales:" = "المبيعات:";
 "Collected:" = "المحصّل:";
 
+// MARK: - Product Units
+"Piece" = "قطعة";
+"Liter" = "لتر";
+"Kilogram" = "كيلوغرام";
+"Meter" = "متر";
+"Box" = "صندوق";
+"Dozen" = "دزينة";
+"pc" = "قطعة";
+"L" = "لتر";
+"kg" = "كغ";
+"m" = "م";
+"box" = "صندوق";
+"dz" = "دزينة";
+"Unit" = "الوحدة";
+"Unit cannot be changed after the product is created." = "لا يمكن تغيير الوحدة بعد إنشاء المنتج.";
+"in stock" = "في المخزون";
+"available" = "متاح";
+"available to return" = "متاح للإرجاع";
+

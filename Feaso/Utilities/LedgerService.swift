@@ -10,7 +10,7 @@ enum LedgerError: Error {
 /// A batch of units distributed at a single historical unit price.
 struct PriceLot {
     let unitPrice: Decimal
-    var quantity: Int
+    var quantity: Decimal
 }
 
 enum LedgerService {
@@ -40,7 +40,7 @@ enum LedgerService {
     /// This creates both a distribution and an immediate payment, resulting in a net-zero balance.
     @MainActor
     static func recordQuickSale(
-        items: [(product: Product, quantity: Int)],
+        items: [(product: Product, quantity: Decimal)],
         note: String? = nil,
         attachmentFileName: String? = nil,
         occurredAt: Date = .now,
@@ -50,7 +50,7 @@ enum LedgerService {
         
         // Calculate total from items using cash price
         let total = items.reduce(Decimal(0)) { sum, item in
-            sum + (item.product.cashPrice * Decimal(item.quantity))
+            sum + (item.product.cashPrice * item.quantity)
         }
         
         // 1. Record the distribution (creates positive balance)
@@ -125,7 +125,7 @@ enum LedgerService {
     @MainActor
     static func recordDistribution(
         to customer: Customer,
-        items: [(product: Product, quantity: Int)],
+        items: [(product: Product, quantity: Decimal)],
         paymentType: PaymentType = .cash,
         installmentConfig: InstallmentConfig? = nil,
         note: String? = nil,
@@ -322,7 +322,7 @@ enum LedgerService {
 
     @MainActor
     static func recordStockReceipt(
-        items: [(product: Product, quantity: Int)],
+        items: [(product: Product, quantity: Decimal)],
         note: String? = nil,
         attachmentFileName: String? = nil,
         occurredAt: Date = .now,
@@ -333,7 +333,7 @@ enum LedgerService {
         }
         // Use cost price for valuation of received stock
         let total = transactionItems.reduce(Decimal(0)) { sum, item in
-            sum + (Decimal(item.quantity) * (item.product?.costPrice ?? 0))
+            sum + (item.quantity * (item.product?.costPrice ?? 0))
         }
 
         let transaction = Transaction(
@@ -388,7 +388,7 @@ enum LedgerService {
     @MainActor
     static func recordReturn(
         from customer: Customer,
-        items: [(product: Product, quantity: Int)],
+        items: [(product: Product, quantity: Decimal)],
         note: String? = nil,
         attachmentFileName: String? = nil,
         occurredAt: Date = .now,
@@ -480,7 +480,7 @@ enum LedgerService {
             }
 
         var lots: [PriceLot] = []
-        var returnedQuantity = 0
+        var returnedQuantity: Decimal = 0
 
         for transaction in activeTransactions {
             for item in transaction.items where item.product?.id == product.id {
@@ -500,15 +500,15 @@ enum LedgerService {
 
     /// Value of returning `quantity` units against the given lots (FIFO).
     /// Used by the UI to preview totals; matches what `recordReturn` will record.
-    static func value(of quantity: Int, from lots: [PriceLot]) -> Decimal {
+    static func value(of quantity: Decimal, from lots: [PriceLot]) -> Decimal {
         guard let segments = try? consume(quantity, from: lots) else {
             return Decimal(0)
         }
-        return segments.reduce(Decimal(0)) { $0 + Decimal($1.quantity) * $1.unitPrice }
+        return segments.reduce(Decimal(0)) { $0 + $1.quantity * $1.unitPrice }
     }
 
     /// Splits `quantity` across lots FIFO, returning one segment per price consumed.
-    private static func consume(_ quantity: Int, from lots: [PriceLot]) throws -> [PriceLot] {
+    private static func consume(_ quantity: Decimal, from lots: [PriceLot]) throws -> [PriceLot] {
         guard quantity > 0 else { return [] }
 
         var remaining = quantity
@@ -532,7 +532,7 @@ enum LedgerService {
     /// Lots remaining after consuming `quantity` units FIFO.
     /// Excess quantity (possible if a distribution was reversed after a return)
     /// is ignored rather than over-stating what remains.
-    private static func consumed(_ lots: [PriceLot], by quantity: Int) -> [PriceLot] {
+    private static func consumed(_ lots: [PriceLot], by quantity: Decimal) -> [PriceLot] {
         var remaining = quantity
         var result: [PriceLot] = []
 
@@ -554,16 +554,53 @@ extension LedgerService {
     
     /// Clears all local data from SwiftData.
     /// Call this when user logs out or switches to a different business.
+    /// Uses individual object deletion instead of batch delete to handle relationship constraints.
     @MainActor
     static func clearAllData(in context: ModelContext) {
-        // Delete in order to respect relationships
-        // First delete items that reference other entities
-        try? context.delete(model: TransactionItem.self)
-        try? context.delete(model: Installment.self)
-        try? context.delete(model: Transaction.self)
-        try? context.delete(model: Product.self)
-        try? context.delete(model: Customer.self)
+        // Fetch and delete individually to handle relationship constraints properly
+        // Delete in order: most dependent entities first
         
+        // 1. Delete TransactionItems first (depends on Product and Transaction)
+        let itemDescriptor = FetchDescriptor<TransactionItem>()
+        if let items = try? context.fetch(itemDescriptor) {
+            for item in items {
+                context.delete(item)
+            }
+        }
+        
+        // 2. Delete Installments (depends on Transaction)
+        let installmentDescriptor = FetchDescriptor<Installment>()
+        if let installments = try? context.fetch(installmentDescriptor) {
+            for installment in installments {
+                context.delete(installment)
+            }
+        }
+        
+        // 3. Delete Transactions (depends on Customer)
+        let transactionDescriptor = FetchDescriptor<Transaction>()
+        if let transactions = try? context.fetch(transactionDescriptor) {
+            for transaction in transactions {
+                context.delete(transaction)
+            }
+        }
+        
+        // 4. Delete Products (no dependencies after items are deleted)
+        let productDescriptor = FetchDescriptor<Product>()
+        if let products = try? context.fetch(productDescriptor) {
+            for product in products {
+                context.delete(product)
+            }
+        }
+        
+        // 5. Delete Customers last (was referenced by transactions)
+        let customerDescriptor = FetchDescriptor<Customer>()
+        if let customers = try? context.fetch(customerDescriptor) {
+            for customer in customers {
+                context.delete(customer)
+            }
+        }
+        
+        // Save all deletions
         try? context.save()
     }
 }

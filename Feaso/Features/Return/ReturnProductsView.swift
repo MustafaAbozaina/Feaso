@@ -5,12 +5,18 @@ import SwiftData
 struct ReturnableProduct: Identifiable {
     let id: UUID
     let product: Product
-    let maxQuantity: Int
+    let maxQuantity: Decimal
+    let productUnit: ProductUnit
     
-    init(product: Product, maxQuantity: Int) {
+    init(product: Product, maxQuantity: Decimal) {
         self.id = product.id
         self.product = product
         self.maxQuantity = maxQuantity
+        self.productUnit = product.unit
+    }
+    
+    var formattedMaxQuantity: String {
+        productUnit.formatWithSymbol(maxQuantity)
     }
 }
 
@@ -18,15 +24,17 @@ struct ReturnableProduct: Identifiable {
 struct ReturnLineDraft: Identifiable {
     let id: UUID
     let product: Product
-    var quantity: Int
-    let maxQuantity: Int
+    let productUnit: ProductUnit
+    var quantity: Decimal
+    let maxQuantity: Decimal
     /// Outstanding distributed units at their historical prices, captured when
     /// the line is added, so the preview matches what the ledger will record.
     let lots: [PriceLot]
 
-    init(product: Product, quantity: Int, maxQuantity: Int, lots: [PriceLot]) {
+    init(product: Product, quantity: Decimal, maxQuantity: Decimal, lots: [PriceLot]) {
         self.id = UUID()
         self.product = product
+        self.productUnit = product.unit
         self.quantity = quantity
         self.maxQuantity = maxQuantity
         self.lots = lots
@@ -35,9 +43,17 @@ struct ReturnLineDraft: Identifiable {
     var productName: String { product.name }
     var lineTotal: Decimal { LedgerService.value(of: quantity, from: lots) }
     var unitPriceDisplay: Decimal {
-        quantity > 0 ? lineTotal / Decimal(quantity) : product.cashPrice
+        quantity > 0 ? lineTotal / quantity : product.cashPrice
     }
     var canIncrement: Bool { quantity < maxQuantity }
+    
+    var formattedQuantity: String {
+        productUnit.format(quantity)
+    }
+    
+    var formattedMaxQuantity: String {
+        productUnit.formatWithSymbol(maxQuantity)
+    }
 }
 
 struct ReturnProductsView: View {
@@ -106,9 +122,10 @@ struct ReturnProductsView: View {
                 ReturnableProductPickerView(
                     returnableProducts: availableReturnableProducts,
                     onSelect: { returnableProduct in
+                        let initialQuantity = returnableProduct.productUnit.defaultStep
                         lines.append(ReturnLineDraft(
                             product: returnableProduct.product,
-                            quantity: 1,
+                            quantity: initialQuantity,
                             maxQuantity: returnableProduct.maxQuantity,
                             lots: LedgerService.outstandingLots(
                                 for: customer,
@@ -316,11 +333,13 @@ struct ReturnProductsView: View {
         lines.removeAll { $0.id == id }
     }
     
-    private func updateQuantity(for id: UUID, to newQuantity: Int) {
+    private func updateQuantity(for id: UUID, to newQuantity: Decimal) {
         if let index = lines.firstIndex(where: { $0.id == id }) {
             // Ensure quantity doesn't exceed max
+            let unit = lines[index].productUnit
+            let minQty = unit.defaultStep
             let maxQty = lines[index].maxQuantity
-            lines[index].quantity = min(max(1, newQuantity), maxQty)
+            lines[index].quantity = min(max(minQty, newQuantity), maxQty)
         }
     }
     
@@ -351,25 +370,33 @@ struct ReturnProductsView: View {
 
 private struct ReturnItemCard: View {
     let line: ReturnLineDraft
-    let onQuantityChange: (Int) -> Void
+    let onQuantityChange: (Decimal) -> Void
+    
+    @State private var localQuantity: Decimal
+    
+    init(line: ReturnLineDraft, onQuantityChange: @escaping (Decimal) -> Void) {
+        self.line = line
+        self.onQuantityChange = onQuantityChange
+        self._localQuantity = State(initialValue: line.quantity)
+    }
     
     var body: some View {
         HStack(spacing: Spacing.md) {
             VStack {
-                ReturnQuantityStepperView(
-                    quantity: line.quantity,
-                    maxQuantity: line.maxQuantity,
-                    onIncrement: { 
-                        if line.canIncrement {
-                            onQuantityChange(line.quantity + 1)
-                        }
-                    },
-                    onDecrement: {
-                        if line.quantity > 1 {
-                            onQuantityChange(line.quantity - 1)
-                        }
-                    }
+                QuantityStepper(
+                    quantity: $localQuantity,
+                    unit: line.productUnit,
+                    onRemove: {},
+                    warningThreshold: nil
                 )
+                .onChange(of: localQuantity) { _, newValue in
+                    // Clamp to max
+                    let clamped = min(newValue, line.maxQuantity)
+                    if clamped != newValue {
+                        localQuantity = clamped
+                    }
+                    onQuantityChange(clamped)
+                }
                 
                 Spacer()
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
@@ -401,7 +428,7 @@ private struct ReturnItemCard: View {
                     .font(.caption)
                     .foregroundStyle(Color.Theme.ink3)
                     
-                    Text(String(localized: "\(line.maxQuantity) available to return"))
+                    Text(line.formattedMaxQuantity + " " + String(localized: "available to return"))
                         .font(.caption)
                         .foregroundStyle(Color.Theme.ink3)
                 }
@@ -412,54 +439,6 @@ private struct ReturnItemCard: View {
         .padding(Spacing.md)
         .background(Color.Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-    }
-}
-
-// MARK: - Return Quantity Stepper View
-
-private struct ReturnQuantityStepperView: View {
-    let quantity: Int
-    let maxQuantity: Int
-    let onIncrement: () -> Void
-    let onDecrement: () -> Void
-    
-    private var isAtMax: Bool { quantity >= maxQuantity }
-    private var isAtMin: Bool { quantity <= 1 }
-    
-    var body: some View {
-        HStack(spacing: 0) {
-            Button {
-                onDecrement()
-            } label: {
-                Image(systemName: "minus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .frame(width: 36, height: 36)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(isAtMin ? Color.Theme.ink3 : Color.Theme.ink)
-            .disabled(isAtMin)
-            
-            Text("\(quantity)")
-                .font(.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.Theme.ink)
-                .frame(minWidth: 32)
-            
-            Button {
-                onIncrement()
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .frame(width: 36, height: 36)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(isAtMax ? Color.Theme.ink3 : Color.Theme.ink)
-            .disabled(isAtMax)
-        }
-        .background(Color.Theme.surface2)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
     }
 }
 
@@ -504,7 +483,7 @@ private struct ReturnableProductPickerView: View {
                         
                         Spacer()
                         
-                        Text(String(localized: "\(item.maxQuantity) available"))
+                        Text(item.formattedMaxQuantity + " " + String(localized: "available"))
                             .font(.caption)
                             .foregroundStyle(Color.Theme.ink2)
                             .padding(.horizontal, Spacing.sm)

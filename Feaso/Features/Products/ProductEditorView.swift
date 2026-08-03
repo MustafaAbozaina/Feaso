@@ -13,6 +13,7 @@ struct ProductEditorView: View {
     @State private var installmentPriceText: String = ""
     @State private var openingStockText: String = ""
     @State private var reorderThresholdText: String = ""
+    @State private var selectedUnit: ProductUnit = SettingsManager.shared.lastSelectedProductUnit
     @State private var showingDeleteAlert = false
     @State private var showingTransactions = false
     
@@ -28,7 +29,7 @@ struct ProductEditorView: View {
         let hasCashPrice = Decimal(string: cashPriceText) != nil && !cashPriceText.isEmpty
         let hasInstallmentPrice = Decimal(string: installmentPriceText) != nil && !installmentPriceText.isEmpty
         guard hasCashPrice || hasInstallmentPrice else { return false }
-        guard Int(openingStockText) != nil || openingStockText.isEmpty else { return false }
+        guard parseStock(openingStockText) != nil || openingStockText.isEmpty else { return false }
         return true
     }
     
@@ -47,8 +48,26 @@ struct ProductEditorView: View {
         return installmentPrice < cashPrice
     }
     
+    /// The unit to use for display - either from existing product or selected
+    private var activeUnit: ProductUnit {
+        product?.unit ?? selectedUnit
+    }
+    
     init(product: Product? = nil) {
         self.product = product
+    }
+    
+    /// Parses stock text based on the active unit
+    private func parseStock(_ text: String) -> Decimal? {
+        let cleanedText = text.replacingOccurrences(of: ",", with: ".")
+        guard let value = Decimal(string: cleanedText) else { return nil }
+        if activeUnit.allowsDecimals {
+            return value
+        } else {
+            // For discrete units, ensure it's a whole number
+            let intValue = Int(truncating: value as NSDecimalNumber)
+            return value == Decimal(intValue) ? value : nil
+        }
     }
     
     var body: some View {
@@ -104,27 +123,76 @@ struct ProductEditorView: View {
             }
             
             Section {
+                // Unit picker - only shown when creating new product
+                if !isEditing {
+                    HStack {
+                        Text(String(localized: "Unit"))
+                        Spacer()
+                        Menu {
+                            ForEach(ProductUnit.allCases) { unit in
+                                Button {
+                                    selectedUnit = unit
+                                    SettingsManager.shared.lastSelectedProductUnit = unit
+                                } label: {
+                                    HStack {
+                                        Text(unit.localizedName)
+                                        if unit == selectedUnit {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: Spacing.xs) {
+                                Text(selectedUnit.localizedName)
+                                    .foregroundStyle(Color.Theme.accent)
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.Theme.accent)
+                            }
+                        }
+                    }
+                } else {
+                    // Show unit as read-only when editing
+                    HStack {
+                        Text(String(localized: "Unit"))
+                        Spacer()
+                        Text(product?.unit.localizedName ?? "")
+                            .foregroundStyle(Color.Theme.ink2)
+                    }
+                }
+                
                 HStack {
                     Text(String(localized: "Opening Stock"))
                     Spacer()
                     TextField("0", text: $openingStockText)
-                        .keyboardType(.numberPad)
+                        .keyboardType(activeUnit.allowsDecimals ? .decimalPad : .numberPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
+                    Text(activeUnit.symbol)
+                        .foregroundStyle(Color.Theme.ink3)
+                        .frame(width: 30, alignment: .leading)
                 }
                 
                 HStack {
                     Text(String(localized: "Reorder Threshold"))
                     Spacer()
                     TextField(String(localized: "None"), text: $reorderThresholdText)
-                        .keyboardType(.numberPad)
+                        .keyboardType(activeUnit.allowsDecimals ? .decimalPad : .numberPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
+                    Text(activeUnit.symbol)
+                        .foregroundStyle(Color.Theme.ink3)
+                        .frame(width: 30, alignment: .leading)
                 }
             } header: {
                 Text(String(localized: "Inventory"))
             } footer: {
-                Text(String(localized: "You'll see a warning when stock falls to or below the threshold."))
+                if !isEditing {
+                    Text(String(localized: "Unit cannot be changed after the product is created."))
+                } else {
+                    Text(String(localized: "You'll see a warning when stock falls to or below the threshold."))
+                }
             }
             
             if isEditing {
@@ -186,10 +254,11 @@ struct ProductEditorView: View {
                 costPriceText = "\(product.costPrice)"
                 cashPriceText = "\(product.cashPrice)"
                 installmentPriceText = "\(product.installmentPrice)"
-                openingStockText = "\(product.openingStock)"
+                openingStockText = product.unit.format(product.openingStock)
                 if let threshold = product.reorderThreshold {
-                    reorderThresholdText = "\(threshold)"
+                    reorderThresholdText = product.unit.format(threshold)
                 }
+                selectedUnit = product.unit
             }
         }
         .alert(
@@ -229,8 +298,8 @@ struct ProductEditorView: View {
             return  // Neither provided (shouldn't happen due to canSave check)
         }
         
-        let openingStock = Int(openingStockText) ?? 0
-        let reorderThreshold = Int(reorderThresholdText)
+        let openingStock = parseStock(openingStockText) ?? Decimal(0)
+        let reorderThreshold = parseStock(reorderThresholdText)
         
         let productToSync: Product
         
@@ -241,6 +310,7 @@ struct ProductEditorView: View {
             product.installmentPrice = installmentPrice
             product.openingStock = openingStock
             product.reorderThreshold = reorderThreshold
+            // Note: unit is NOT updated for existing products (immutable)
             productToSync = product
         } else {
             let newProduct = Product(
@@ -249,7 +319,8 @@ struct ProductEditorView: View {
                 cashPrice: cashPrice,
                 installmentPrice: installmentPrice,
                 openingStock: openingStock,
-                reorderThreshold: reorderThreshold
+                reorderThreshold: reorderThreshold,
+                unit: selectedUnit
             )
             modelContext.insert(newProduct)
             productToSync = newProduct

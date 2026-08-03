@@ -24,6 +24,8 @@ struct RootView: View {
                 loadingView
             } else if authService.isAuthenticated {
                 mainTabView
+                    // Force view recreation when businessId changes to clear @Query caches
+                    .id(authService.businessId)
             } else {
                 LoginView()
             }
@@ -37,8 +39,10 @@ struct RootView: View {
             }
         }
         .onChange(of: authService.businessId) { oldValue, newValue in
-            // If businessId changed (user switched businesses), clear old data first
-            if let oldBizId = oldValue, let newBizId = newValue, oldBizId != newBizId {
+            // If businessId changed (user switched businesses or logged in as different user), clear old data first
+            if let newBizId = newValue, previousBusinessId != nil && previousBusinessId != newBizId {
+                // Different business - must clear old data before syncing new
+                SyncService.shared.stopSync()
                 LedgerService.clearAllData(in: modelContext)
             }
             

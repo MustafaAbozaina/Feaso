@@ -446,3 +446,22 @@
 "Sales:" = "Sales:";
 "Collected:" = "Collected:";
 
+// MARK: - Product Units
+"Piece" = "Piece";
+"Liter" = "Liter";
+"Kilogram" = "Kilogram";
+"Meter" = "Meter";
+"Box" = "Box";
+"Dozen" = "Dozen";
+"pc" = "pc";
+"L" = "L";
+"kg" = "kg";
+"m" = "m";
+"box" = "box";
+"dz" = "dz";
+"Unit" = "Unit";
+"Unit cannot be changed after the product is created." = "Unit cannot be changed after the product is created.";
+"in stock" = "in stock";
+"available" = "available";
+"available to return" = "available to return";
+

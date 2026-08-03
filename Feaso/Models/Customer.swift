@@ -36,16 +36,16 @@ final class Customer {
     
     /// Calculates how many units of each product the customer can still return.
     /// Formula: distributed quantity - already returned quantity (excluding reversed transactions)
-    var returnableProducts: [Product: Int] {
+    var returnableProducts: [Product: Decimal] {
         let activeTransactions = transactions.filter { $0.reversedBy == nil }
         
-        var productQuantities: [UUID: (product: Product, quantity: Int)] = [:]
+        var productQuantities: [UUID: (product: Product, quantity: Decimal)] = [:]
         
         for transaction in activeTransactions {
             for item in transaction.items {
                 guard let product = item.product else { continue }
                 
-                let currentQuantity = productQuantities[product.id]?.quantity ?? 0
+                let currentQuantity = productQuantities[product.id]?.quantity ?? Decimal(0)
                 
                 switch transaction.type {
                 case .distribution:
@@ -61,7 +61,7 @@ final class Customer {
         }
         
         // Return only products with positive returnable quantity
-        var result: [Product: Int] = [:]
+        var result: [Product: Decimal] = [:]
         for (_, value) in productQuantities where value.quantity > 0 {
             result[value.product] = value.quantity
         }

@@ -25,7 +25,7 @@ struct QuickSaleView: View {
     private var stockWarningMessage: String {
         let warnings = lines.filter { $0.exceedsStock }
         return warnings.map { line in
-            String(localized: "\(line.product.name): only \(line.product.currentStock) in stock, cart has \(line.quantity)")
+            String(localized: "\(line.product.name): only \(line.formattedStock) in stock, cart has \(line.formattedQuantity)")
         }.joined(separator: "\n")
     }
     
@@ -57,7 +57,8 @@ struct QuickSaleView: View {
             NavigationStack {
                 ProductPickerView(
                     onSelect: { product in
-                        lines.append(QuickSaleLineDraft(product: product, quantity: 1))
+                        let initialQuantity = product.unit.defaultStep
+                        lines.append(QuickSaleLineDraft(product: product, quantity: initialQuantity))
                     },
                     excludedProductIDs: excludedProductIDs
                 )
@@ -110,44 +111,37 @@ struct QuickSaleView: View {
     private var cartList: some View {
         List {
             // Cash payment indicator
-            Section {
-                HStack {
-                    Image(systemName: "banknote")
-                        .foregroundStyle(Color.Theme.success)
-                    Text(String(localized: "Cash Sale"))
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    Spacer()
-                    Text(String(localized: "Walk-in Customer"))
-                        .font(.caption)
-                        .foregroundStyle(Color.Theme.ink2)
-                }
-                .padding(.vertical, Spacing.xs)
+            HStack {
+                Image(systemName: "banknote")
+                    .foregroundStyle(Color.Theme.success)
+                Text(String(localized: "Cash Sale"))
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Spacer()
+                Text(String(localized: "Walk-in Customer"))
+                    .font(.caption)
+                    .foregroundStyle(Color.Theme.ink2)
             }
+            .padding(Spacing.md)
+            .background(Color.Theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
             .listRowInsets(EdgeInsets(
                 top: Spacing.sm,
                 leading: Spacing.lg,
                 bottom: Spacing.sm,
                 trailing: Spacing.lg
             ))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
             
             // Cart items
-            Section {
-                ForEach(lines) { line in
-                    QuickSaleCartItemCard(
-                        line: line,
-                        onQuantityChange: { newQuantity in
-                            updateQuantity(for: line.id, to: newQuantity)
-                        }
-                    )
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            removeLineWithID(line.id)
-                        } label: {
-                            Label(String(localized: "Delete"), systemImage: "trash")
-                        }
+            ForEach(lines) { line in
+                QuickSaleCartItemCard(
+                    line: line,
+                    onQuantityChange: { newQuantity in
+                        updateQuantity(for: line.id, to: newQuantity)
                     }
-                }
+                )
                 .listRowInsets(EdgeInsets(
                     top: Spacing.sm,
                     leading: Spacing.lg,
@@ -156,50 +150,72 @@ struct QuickSaleView: View {
                 ))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
-                
-                // Add product button
-                Button {
-                    showingPicker = true
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text(lines.isEmpty ? String(localized: "Add product") : String(localized: "Add another product"))
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        removeLineWithID(line.id)
+                    } label: {
+                        Label(String(localized: "Delete"), systemImage: "trash")
                     }
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color.Theme.accent)
                 }
-                .listRowInsets(EdgeInsets(
-                    top: Spacing.md,
-                    leading: Spacing.lg,
-                    bottom: Spacing.md,
-                    trailing: Spacing.lg
-                ))
             }
             
+            // Add product button
+            addProductButton
+                .listRowInsets(EdgeInsets(
+                    top: Spacing.sm,
+                    leading: Spacing.lg,
+                    bottom: Spacing.sm,
+                    trailing: Spacing.lg
+                ))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            
             // Attachment section
-            Section {
-                AttachmentButton(
-                    attachedImage: attachedImage,
-                    onTap: {
-                        showingAttachmentSheet = true
-                    },
-                    onRemove: {
-                        attachedImage = nil
-                    }
-                )
-            } header: {
-                Text(String(localized: "ATTACHMENT (OPTIONAL)"))
-            }
-            .listRowInsets(EdgeInsets(
-                top: Spacing.sm,
-                leading: Spacing.lg,
-                bottom: Spacing.sm,
-                trailing: Spacing.lg
-            ))
+            attachmentSection
+                .listRowInsets(EdgeInsets(
+                    top: Spacing.sm,
+                    leading: Spacing.lg,
+                    bottom: Spacing.sm,
+                    trailing: Spacing.lg
+                ))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
         }
-        .listStyle(.insetGrouped)
+        .listStyle(.plain)
         .scrollContentBackground(.hidden)
+    }
+    
+    private var addProductButton: some View {
+        Button {
+            showingPicker = true
+        } label: {
+            HStack {
+                Image(systemName: "plus")
+                Text(lines.isEmpty ? String(localized: "Add product") : String(localized: "Add another product"))
+            }
+            .font(.body)
+            .fontWeight(.medium)
+            .foregroundStyle(Color.Theme.accent)
+            .frame(maxWidth: .infinity)
+            .padding(Spacing.lg)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.md)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8]))
+                    .foregroundStyle(Color.Theme.border2)
+            )
+        }
+    }
+    
+    private var attachmentSection: some View {
+        AttachmentButton(
+            attachedImage: attachedImage,
+            onTap: {
+                showingAttachmentSheet = true
+            },
+            onRemove: {
+                attachedImage = nil
+            }
+        )
     }
     
     // MARK: - Footer Bar
@@ -251,7 +267,7 @@ struct QuickSaleView: View {
         lines.removeAll { $0.id == id }
     }
     
-    private func updateQuantity(for id: UUID, to newQuantity: Int) {
+    private func updateQuantity(for id: UUID, to newQuantity: Decimal) {
         if let index = lines.firstIndex(where: { $0.id == id }) {
             lines[index].quantity = newQuantity
         }
@@ -284,26 +300,41 @@ struct QuickSaleView: View {
 private struct QuickSaleLineDraft: Identifiable {
     let id = UUID()
     let product: Product
-    var quantity: Int
+    let productUnit: ProductUnit
+    var quantity: Decimal
+    
+    init(product: Product, quantity: Decimal) {
+        self.product = product
+        self.productUnit = product.unit
+        self.quantity = quantity
+    }
     
     var unitPrice: Decimal {
         product.cashPrice
     }
     
     var lineTotal: Decimal {
-        unitPrice * Decimal(quantity)
+        unitPrice * quantity
     }
     
     var productName: String {
         product.name
     }
     
-    var productCurrentStock: Int {
+    var productCurrentStock: Decimal {
         product.currentStock
     }
     
     var exceedsStock: Bool {
         quantity > product.currentStock
+    }
+    
+    var formattedQuantity: String {
+        productUnit.format(quantity)
+    }
+    
+    var formattedStock: String {
+        productUnit.formatWithSymbol(productCurrentStock)
     }
 }
 
@@ -311,21 +342,28 @@ private struct QuickSaleLineDraft: Identifiable {
 
 private struct QuickSaleCartItemCard: View {
     let line: QuickSaleLineDraft
-    let onQuantityChange: (Int) -> Void
+    let onQuantityChange: (Decimal) -> Void
+    
+    @State private var localQuantity: Decimal
+    
+    init(line: QuickSaleLineDraft, onQuantityChange: @escaping (Decimal) -> Void) {
+        self.line = line
+        self.onQuantityChange = onQuantityChange
+        self._localQuantity = State(initialValue: line.quantity)
+    }
     
     var body: some View {
         HStack(spacing: Spacing.md) {
             VStack {
-                QuickSaleQuantityStepperView(
-                    quantity: line.quantity,
-                    warningThreshold: line.productCurrentStock,
-                    onIncrement: { onQuantityChange(line.quantity + 1) },
-                    onDecrement: {
-                        if line.quantity > 1 {
-                            onQuantityChange(line.quantity - 1)
-                        }
-                    }
+                QuantityStepper(
+                    quantity: $localQuantity,
+                    unit: line.productUnit,
+                    onRemove: {},
+                    warningThreshold: line.productCurrentStock
                 )
+                .onChange(of: localQuantity) { _, newValue in
+                    onQuantityChange(newValue)
+                }
                 
                 Spacer()
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
@@ -352,7 +390,8 @@ private struct QuickSaleCartItemCard: View {
                     Text(CurrencyFormatter.string(line.unitPrice))
                     Text(CurrencyFormatter.symbol)
                     Text("·")
-                    Text(String(localized: "\(line.productCurrentStock) in stock"))
+                    Text(line.formattedStock)
+                    Text(String(localized: "in stock"))
                 }
                 .font(.caption)
                 .foregroundStyle(line.exceedsStock ? Color.Theme.warning : Color.Theme.ink3)
@@ -363,55 +402,6 @@ private struct QuickSaleCartItemCard: View {
         .padding(Spacing.md)
         .background(Color.Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-    }
-}
-
-// MARK: - Quantity Stepper View
-
-private struct QuickSaleQuantityStepperView: View {
-    let quantity: Int
-    let warningThreshold: Int?
-    let onIncrement: () -> Void
-    let onDecrement: () -> Void
-    
-    private var showWarning: Bool {
-        guard let threshold = warningThreshold else { return false }
-        return quantity > threshold
-    }
-    
-    var body: some View {
-        HStack(spacing: 0) {
-            Button {
-                onDecrement()
-            } label: {
-                Image(systemName: "minus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(quantity > 1 ? Color.Theme.ink : Color.Theme.ink3)
-                    .frame(width: 32, height: 32)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .disabled(quantity <= 1)
-            
-            Text("\(quantity)")
-                .font(.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(showWarning ? Color.Theme.warning : Color.Theme.ink)
-                .frame(width: 32, height: 32)
-            
-            Button {
-                onIncrement()
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.Theme.ink)
-                    .frame(width: 32, height: 32)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .background(Color.Theme.surface2)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
     }
 }
 

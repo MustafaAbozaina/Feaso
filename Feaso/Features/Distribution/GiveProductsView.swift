@@ -40,7 +40,7 @@ struct GiveProductsView: View {
     private var stockWarningMessage: String {
         let warnings = lines.filter { $0.exceedsStock }
         return warnings.map { line in
-            String(localized: "\(line.product.name): only \(line.product.currentStock) in stock, cart has \(line.quantity)")
+            String(localized: "\(line.product.name): only \(line.formattedStock) in stock, cart has \(line.formattedQuantity)")
         }.joined(separator: "\n")
     }
     
@@ -72,7 +72,8 @@ struct GiveProductsView: View {
             NavigationStack {
                 ProductPickerView(
                     onSelect: { product in
-                        lines.append(LineDraft(product: product, quantity: 1, paymentType: paymentType))
+                        let initialQuantity = product.unit.defaultStep
+                        lines.append(LineDraft(product: product, quantity: initialQuantity, paymentType: paymentType))
                     },
                     excludedProductIDs: excludedProductIDs
                 )
@@ -467,7 +468,7 @@ struct GiveProductsView: View {
         lines.removeAll { $0.id == id }
     }
     
-    private func updateQuantity(for id: UUID, to newQuantity: Int) {
+    private func updateQuantity(for id: UUID, to newQuantity: Decimal) {
         if let index = lines.firstIndex(where: { $0.id == id }) {
             lines[index].quantity = newQuantity
         }
@@ -520,21 +521,28 @@ struct GiveProductsView: View {
 
 private struct CartItemCard: View {
     let line: LineDraft
-    let onQuantityChange: (Int) -> Void
+    let onQuantityChange: (Decimal) -> Void
+    
+    @State private var localQuantity: Decimal
+    
+    init(line: LineDraft, onQuantityChange: @escaping (Decimal) -> Void) {
+        self.line = line
+        self.onQuantityChange = onQuantityChange
+        self._localQuantity = State(initialValue: line.quantity)
+    }
     
     var body: some View {
         HStack(spacing: Spacing.md) {
             VStack {
-                QuantityStepperView(
-                    quantity: line.quantity,
-                    warningThreshold: line.productCurrentStock,
-                    onIncrement: { onQuantityChange(line.quantity + 1) },
-                    onDecrement: {
-                        if line.quantity > 1 {
-                            onQuantityChange(line.quantity - 1)
-                        }
-                    }
+                QuantityStepper(
+                    quantity: $localQuantity,
+                    unit: line.productUnit,
+                    onRemove: {},
+                    warningThreshold: line.productCurrentStock
                 )
+                .onChange(of: localQuantity) { _, newValue in
+                    onQuantityChange(newValue)
+                }
                 
                 Spacer()
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
@@ -561,7 +569,8 @@ private struct CartItemCard: View {
                     Text(CurrencyFormatter.string(line.unitPrice))
                     Text(CurrencyFormatter.symbol)
                     Text("·")
-                    Text(String(localized: "\(line.productCurrentStock) in stock"))
+                    Text(line.formattedStock)
+                    Text(String(localized: "in stock"))
                 }
                 .font(.caption)
                 .foregroundStyle(line.exceedsStock ? Color.Theme.warning : Color.Theme.ink3)
@@ -572,54 +581,6 @@ private struct CartItemCard: View {
         .padding(Spacing.md)
         .background(Color.Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-    }
-}
-
-// MARK: - Quantity Stepper View (callback-based)
-
-private struct QuantityStepperView: View {
-    let quantity: Int
-    let warningThreshold: Int?
-    let onIncrement: () -> Void
-    let onDecrement: () -> Void
-    
-    private var showWarning: Bool {
-        guard let threshold = warningThreshold else { return false }
-        return quantity > threshold
-    }
-    
-    var body: some View {
-        HStack(spacing: 0) {
-            Button {
-                onDecrement()
-            } label: {
-                Image(systemName: "minus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .frame(width: 36, height: 36)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.Theme.ink)
-            
-            Text("\(quantity)")
-                .font(.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(showWarning ? Color.Theme.warning : Color.Theme.ink)
-                .frame(minWidth: 32)
-            
-            Button {
-                onIncrement()
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .frame(width: 36, height: 36)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.Theme.ink)
-        }
-        .background(Color.Theme.surface2)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
     }
 }
 

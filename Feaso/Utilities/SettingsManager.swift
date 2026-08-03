@@ -7,6 +7,7 @@ final class SettingsManager {
     
     private let currencyKey = "selectedCurrency"
     private let languageKey = "selectedLanguage"
+    private let lastProductUnitKey = "lastSelectedProductUnit"
     
     var selectedCurrency: Currency {
         didSet {
@@ -18,6 +19,13 @@ final class SettingsManager {
         didSet {
             UserDefaults.standard.set(selectedLanguage.rawValue, forKey: languageKey)
             applyLanguage(selectedLanguage)
+        }
+    }
+    
+    /// The last selected product unit, used as default when creating new products
+    var lastSelectedProductUnit: ProductUnit {
+        didSet {
+            UserDefaults.standard.set(lastSelectedProductUnit.rawValue, forKey: lastProductUnitKey)
         }
     }
     
@@ -36,6 +44,14 @@ final class SettingsManager {
             self.selectedLanguage = language
         } else {
             self.selectedLanguage = .system
+        }
+        
+        // Load saved product unit or default to piece
+        if let savedUnit = UserDefaults.standard.string(forKey: lastProductUnitKey),
+           let unit = ProductUnit(rawValue: savedUnit) {
+            self.lastSelectedProductUnit = unit
+        } else {
+            self.lastSelectedProductUnit = .piece
         }
     }
     

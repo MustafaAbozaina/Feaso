@@ -159,7 +159,7 @@ final class FirebasePullSyncProvider: SyncProvider {
         for item in transactionData.items {
             let firestoreItem = FirestoreTransactionItem(
                 id: item.id.uuidString,
-                quantity: item.quantity,
+                quantity: "\(item.quantity)",
                 unitPrice: "\(item.unitPrice)",
                 transactionId: transactionData.id.uuidString,
                 productId: item.productId
