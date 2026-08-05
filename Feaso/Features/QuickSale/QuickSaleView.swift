@@ -140,6 +140,9 @@ struct QuickSaleView: View {
                     line: line,
                     onQuantityChange: { newQuantity in
                         updateQuantity(for: line.id, to: newQuantity)
+                    },
+                    onPriceChange: { newPrice in
+                        updatePrice(for: line.id, to: newPrice)
                     }
                 )
                 .listRowInsets(EdgeInsets(
@@ -273,6 +276,12 @@ struct QuickSaleView: View {
         }
     }
     
+    private func updatePrice(for id: UUID, to newPrice: Decimal?) {
+        if let index = lines.firstIndex(where: { $0.id == id }) {
+            lines[index].unitPriceOverride = newPrice
+        }
+    }
+    
     private func confirmSale() {
         // Save attachment if present
         var attachmentFileName: String? = nil
@@ -281,7 +290,7 @@ struct QuickSaleView: View {
             attachmentFileName = ImageAttachmentService.saveImage(image, for: transactionId)
         }
         
-        let items = lines.map { ($0.product, $0.quantity) }
+        let items = lines.map { (product: $0.product, quantity: $0.quantity, unitPriceOverride: $0.unitPriceOverride) }
         do {
             try LedgerService.recordQuickSale(
                 items: items,
@@ -303,14 +312,24 @@ private struct QuickSaleLineDraft: Identifiable {
     let productUnit: ProductUnit
     var quantity: Decimal
     
-    init(product: Product, quantity: Decimal) {
+    /// Custom unit price for this line item only. If nil, uses the default product cash price.
+    var unitPriceOverride: Decimal?
+    
+    init(product: Product, quantity: Decimal, unitPriceOverride: Decimal? = nil) {
         self.product = product
         self.productUnit = product.unit
         self.quantity = quantity
+        self.unitPriceOverride = unitPriceOverride
     }
     
-    var unitPrice: Decimal {
+    /// The default unit price (cash price for quick sales)
+    var defaultUnitPrice: Decimal {
         product.cashPrice
+    }
+    
+    /// The actual unit price used for this line (override if set, otherwise default)
+    var unitPrice: Decimal {
+        unitPriceOverride ?? defaultUnitPrice
     }
     
     var lineTotal: Decimal {
@@ -336,6 +355,30 @@ private struct QuickSaleLineDraft: Identifiable {
     var formattedStock: String {
         productUnit.formatWithSymbol(productCurrentStock)
     }
+    
+    /// Returns true if a custom price override is set
+    var hasCustomPrice: Bool {
+        unitPriceOverride != nil
+    }
+    
+    /// The discount percentage (0-100). Positive means discount, negative means markup.
+    var discountPercentage: Decimal? {
+        guard let override = unitPriceOverride, defaultUnitPrice > 0 else { return nil }
+        let discount = ((defaultUnitPrice - override) / defaultUnitPrice) * 100
+        return discount
+    }
+    
+    /// Formatted discount text for display
+    var discountDisplayText: String? {
+        guard let percentage = discountPercentage else { return nil }
+        if percentage > 0 {
+            return String(localized: "\(NSDecimalNumber(decimal: percentage.rounded(scale: 1)).intValue)% off")
+        } else if percentage < 0 {
+            let markup = abs(percentage)
+            return String(localized: "\(NSDecimalNumber(decimal: markup.rounded(scale: 1)).intValue)% markup")
+        }
+        return nil
+    }
 }
 
 // MARK: - Cart Item Card
@@ -343,12 +386,15 @@ private struct QuickSaleLineDraft: Identifiable {
 private struct QuickSaleCartItemCard: View {
     let line: QuickSaleLineDraft
     let onQuantityChange: (Decimal) -> Void
+    let onPriceChange: (Decimal?) -> Void
     
     @State private var localQuantity: Decimal
+    @State private var showingPriceEditor = false
     
-    init(line: QuickSaleLineDraft, onQuantityChange: @escaping (Decimal) -> Void) {
+    init(line: QuickSaleLineDraft, onQuantityChange: @escaping (Decimal) -> Void, onPriceChange: @escaping (Decimal?) -> Void) {
         self.line = line
         self.onQuantityChange = onQuantityChange
+        self.onPriceChange = onPriceChange
         self._localQuantity = State(initialValue: line.quantity)
     }
     
@@ -386,10 +432,46 @@ private struct QuickSaleCartItemCard: View {
             
                 Spacer()
                 
+                // Editable price row
+                Button {
+                    showingPriceEditor = true
+                } label: {
+                    HStack(spacing: Spacing.xs) {
+                        Text(CurrencyFormatter.string(line.unitPrice))
+                            .fontWeight(line.hasCustomPrice ? .semibold : .regular)
+                            .foregroundStyle(line.hasCustomPrice ? Color.Theme.accent : Color.Theme.ink2)
+                        Text(CurrencyFormatter.symbol)
+                            .foregroundStyle(Color.Theme.ink3)
+                        
+                        // Discount badge
+                        if let discountText = line.discountDisplayText {
+                            Text(discountText)
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .foregroundStyle(Color.Theme.success)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.Theme.successBg)
+                                .clipShape(Capsule())
+                        }
+                        
+                        Image(systemName: "pencil")
+                            .font(.caption2)
+                            .foregroundStyle(Color.Theme.accent)
+                    }
+                    .font(.caption)
+                }
+                .buttonStyle(.plain)
+                
+                // Stock info
                 HStack(spacing: Spacing.xs) {
-                    Text(CurrencyFormatter.string(line.unitPrice))
-                    Text(CurrencyFormatter.symbol)
-                    Text("·")
+                    if line.hasCustomPrice {
+                        Text(String(localized: "was \(CurrencyFormatter.string(line.defaultUnitPrice))"))
+                            .strikethrough()
+                            .foregroundStyle(Color.Theme.ink3)
+                        Text("·")
+                            .foregroundStyle(Color.Theme.ink3)
+                    }
                     Text(line.formattedStock)
                     Text(String(localized: "in stock"))
                 }
@@ -402,6 +484,151 @@ private struct QuickSaleCartItemCard: View {
         .padding(Spacing.md)
         .background(Color.Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        .sheet(isPresented: $showingPriceEditor) {
+            QuickSalePriceEditorSheet(
+                productName: line.productName,
+                defaultPrice: line.defaultUnitPrice,
+                currentPrice: line.unitPrice,
+                onSave: { newPrice in
+                    if newPrice == line.defaultUnitPrice {
+                        onPriceChange(nil)
+                    } else {
+                        onPriceChange(newPrice)
+                    }
+                },
+                onReset: {
+                    onPriceChange(nil)
+                }
+            )
+            .presentationDetents([.height(280)])
+        }
+    }
+}
+
+// MARK: - Price Editor Sheet
+
+private struct QuickSalePriceEditorSheet: View {
+    let productName: String
+    let defaultPrice: Decimal
+    let currentPrice: Decimal
+    let onSave: (Decimal) -> Void
+    let onReset: () -> Void
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var priceText: String = ""
+    @FocusState private var isFocused: Bool
+    
+    private var enteredPrice: Decimal {
+        Decimal(string: priceText) ?? currentPrice
+    }
+    
+    private var discountPercentage: Decimal {
+        guard defaultPrice > 0 else { return 0 }
+        return ((defaultPrice - enteredPrice) / defaultPrice) * 100
+    }
+    
+    private var discountText: String? {
+        let percentage = discountPercentage
+        if percentage > 0 {
+            return String(localized: "\(NSDecimalNumber(decimal: percentage.rounded(scale: 1)).intValue)% discount")
+        } else if percentage < 0 {
+            let markup = abs(percentage)
+            return String(localized: "\(NSDecimalNumber(decimal: markup.rounded(scale: 1)).intValue)% markup")
+        }
+        return nil
+    }
+    
+    private var isCustomPrice: Bool {
+        enteredPrice != defaultPrice
+    }
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: Spacing.lg) {
+                // Product name
+                Text(productName)
+                    .font(.headline)
+                    .foregroundStyle(Color.Theme.ink)
+                
+                // Price input
+                VStack(spacing: Spacing.sm) {
+                    HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
+                        TextField("0", text: $priceText)
+                            .font(.system(size: 36, weight: .semibold))
+                            .foregroundStyle(isCustomPrice ? Color.Theme.accent : Color.Theme.ink)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.center)
+                            .focused($isFocused)
+                        
+                        Text(CurrencyFormatter.symbol)
+                            .font(.title3)
+                            .foregroundStyle(Color.Theme.ink3)
+                    }
+                    
+                    // Discount/markup indicator
+                    if let text = discountText {
+                        HStack(spacing: Spacing.xs) {
+                            Image(systemName: discountPercentage > 0 ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
+                            Text(text)
+                        }
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(discountPercentage > 0 ? Color.Theme.success : Color.Theme.warning)
+                    }
+                    
+                    // Original price reference
+                    if isCustomPrice {
+                        Text(String(localized: "Original: \(CurrencyFormatter.string(defaultPrice)) \(CurrencyFormatter.symbol)"))
+                            .font(.caption)
+                            .foregroundStyle(Color.Theme.ink3)
+                    }
+                }
+                
+                Spacer()
+                
+                // Action buttons
+                VStack(spacing: Spacing.sm) {
+                    Button {
+                        onSave(enteredPrice)
+                        dismiss()
+                    } label: {
+                        Text(String(localized: "Apply Price"))
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(Spacing.md)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.Theme.accent)
+                    .disabled(enteredPrice <= 0)
+                    
+                    if currentPrice != defaultPrice {
+                        Button {
+                            onReset()
+                            dismiss()
+                        } label: {
+                            Text(String(localized: "Reset to Original"))
+                                .font(.subheadline)
+                                .foregroundStyle(Color.Theme.ink2)
+                        }
+                    }
+                }
+            }
+            .padding(Spacing.lg)
+            .navigationTitle(String(localized: "Edit Price"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Cancel")) {
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                priceText = "\(currentPrice)"
+                isFocused = true
+            }
+        }
     }
 }
 

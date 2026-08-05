@@ -51,10 +51,8 @@ struct HomeView: View {
     }
     
     private var dueThisWeekInstallments: [Installment] {
-        let calendar = Calendar.current
-        let today = Date()
-        let weekFromNow = calendar.date(byAdding: .day, value: 7, to: today) ?? today
-        return unpaidInstallments.filter { !$0.isOverdue && $0.dueDate <= weekFromNow }
+        let endOfWeek = WorkWeekManager.endOfWorkWeek()
+        return unpaidInstallments.filter { !$0.isOverdue && $0.dueDate <= endOfWeek }
     }
     
     private var totalOutstanding: Decimal {

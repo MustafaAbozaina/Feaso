@@ -97,7 +97,7 @@ enum PreviewSeed {
         // Ahmed: Active, owes money, recent activity
         try LedgerService.recordDistribution(
             to: ahmed,
-            items: [(tv, 2), (soundbar, 3)],
+            items: [(product: tv, quantity: 2, unitPriceOverride: nil), (product: soundbar, quantity: 3, unitPriceOverride: nil)],
             occurredAt: daysAgo(5),
             in: context
         )
@@ -110,7 +110,7 @@ enum PreviewSeed {
         )
         try LedgerService.recordDistribution(
             to: ahmed,
-            items: [(coffeeMachine, 2), (fan, 5)],
+            items: [(product: coffeeMachine, quantity: 2, unitPriceOverride: nil), (product: fan, quantity: 5, unitPriceOverride: nil)],
             occurredAt: daysAgo(1),
             in: context
         )
@@ -118,7 +118,7 @@ enum PreviewSeed {
         // Mahmoud: Active, owes money, slightly stale (10 days)
         try LedgerService.recordDistribution(
             to: mahmoud,
-            items: [(microwave, 3), (blender, 4)],
+            items: [(product: microwave, quantity: 3, unitPriceOverride: nil), (product: blender, quantity: 4, unitPriceOverride: nil)],
             occurredAt: daysAgo(15),
             in: context
         )
@@ -132,7 +132,7 @@ enum PreviewSeed {
         // Yasser: Active, owes money, stale activity (20+ days - should show warning)
         try LedgerService.recordDistribution(
             to: yasser,
-            items: [(airConditioner, 1), (tv, 1)],
+            items: [(product: airConditioner, quantity: 1, unitPriceOverride: nil), (product: tv, quantity: 1, unitPriceOverride: nil)],
             occurredAt: daysAgo(25),
             in: context
         )
@@ -146,7 +146,7 @@ enum PreviewSeed {
         // Khaled: Settled (balance = 0)
         try LedgerService.recordDistribution(
             to: khaled,
-            items: [(fan, 10), (toaster, 5)],
+            items: [(product: fan, quantity: 10, unitPriceOverride: nil), (product: toaster, quantity: 5, unitPriceOverride: nil)],
             occurredAt: daysAgo(30),
             in: context
         )
@@ -161,13 +161,13 @@ enum PreviewSeed {
         // Sherif: Active, owes money, recent activity
         try LedgerService.recordDistribution(
             to: sherif,
-            items: [(tv, 3), (soundbar, 2), (coffeeMachine, 1)],
+            items: [(product: tv, quantity: 3, unitPriceOverride: nil), (product: soundbar, quantity: 2, unitPriceOverride: nil), (product: coffeeMachine, quantity: 1, unitPriceOverride: nil)],
             occurredAt: daysAgo(7),
             in: context
         )
         try LedgerService.recordDistribution(
             to: sherif,
-            items: [(blender, 3)],
+            items: [(product: blender, quantity: 3, unitPriceOverride: nil)],
             occurredAt: daysAgo(2),
             in: context
         )

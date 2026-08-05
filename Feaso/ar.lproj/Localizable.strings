@@ -464,3 +464,13 @@
 "available" = "متاح";
 "available to return" = "متاح للإرجاع";
 
+// MARK: - Price Override
+"Edit Price" = "تعديل السعر";
+"Apply Price" = "تطبيق السعر";
+"Reset to Original" = "إعادة للأصلي";
+"Original: %@ %@" = "الأصلي: %@ %@";
+"%lld%% off" = "خصم %lld%%";
+"%lld%% markup" = "زيادة %lld%%";
+"%lld%% discount" = "خصم %lld%%";
+"was %@" = "كان %@";
+

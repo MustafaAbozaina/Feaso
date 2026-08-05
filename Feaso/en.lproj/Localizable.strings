@@ -465,3 +465,13 @@
 "available" = "available";
 "available to return" = "available to return";
 
+// MARK: - Price Override
+"Edit Price" = "Edit Price";
+"Apply Price" = "Apply Price";
+"Reset to Original" = "Reset to Original";
+"Original: %@ %@" = "Original: %@ %@";
+"%lld%% off" = "%lld%% off";
+"%lld%% markup" = "%lld%% markup";
+"%lld%% discount" = "%lld%% discount";
+"was %@" = "was %@";
+

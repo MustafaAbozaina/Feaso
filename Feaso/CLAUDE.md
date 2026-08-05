@@ -490,7 +490,23 @@ Feaso/
 
 - All monetary values: `Decimal` (never `Double`)
 - Display through `CurrencyFormatter`
-- Quantities: `Int`
+- Quantities: `Decimal` (to support fractional units like liters, kilograms)
+
+### Per-Line Price Override Pattern
+
+When selling products, sellers can override the unit price for a specific line item without affecting the product's stored price. This pattern:
+
+1. **LineDraft** holds optional `unitPriceOverride: Decimal?`
+2. **Computed properties** calculate:
+   - `defaultUnitPrice` — base price from product (cash or installment)
+   - `unitPrice` — returns override if set, otherwise default
+   - `discountPercentage` — `((default - override) / default) * 100`
+   - `discountDisplayText` — "20% off" or "10% markup"
+3. **UI Flow**: User taps price → sheet appears → enter new price → app shows discount percentage
+4. **LedgerService** accepts `unitPriceOverride` in item tuples and passes to `TransactionItem`
+5. **Storage**: Override stored in `TransactionItem.unitPrice` field
+
+This keeps database prices unchanged while allowing sale-specific adjustments with automatic discount calculation.
 
 ### Localization
 

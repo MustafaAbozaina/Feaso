@@ -40,7 +40,7 @@ enum LedgerService {
     /// This creates both a distribution and an immediate payment, resulting in a net-zero balance.
     @MainActor
     static func recordQuickSale(
-        items: [(product: Product, quantity: Decimal)],
+        items: [(product: Product, quantity: Decimal, unitPriceOverride: Decimal?)],
         note: String? = nil,
         attachmentFileName: String? = nil,
         occurredAt: Date = .now,
@@ -48,14 +48,19 @@ enum LedgerService {
     ) throws {
         let walkInCustomer = getOrCreateWalkInCustomer(in: context)
         
-        // Calculate total from items using cash price
-        let total = items.reduce(Decimal(0)) { sum, item in
-            sum + (item.product.cashPrice * item.quantity)
+        // 1. Record the distribution (creates positive balance)
+        // Create transaction items with custom prices if provided
+        let transactionItems = items.map { item in
+            if let override = item.unitPriceOverride {
+                return TransactionItem(product: item.product, quantity: item.quantity, unitPriceOverride: override)
+            } else {
+                return TransactionItem(product: item.product, quantity: item.quantity, paymentType: .cash)
+            }
         }
         
-        // 1. Record the distribution (creates positive balance)
-        let transactionItems = items.map { item in
-            TransactionItem(product: item.product, quantity: item.quantity, paymentType: .cash)
+        // Calculate total from actual transaction items (respecting price overrides)
+        let total = transactionItems.reduce(Decimal(0)) { sum, item in
+            sum + item.lineTotal
         }
         
         let distributionTransaction = Transaction(
@@ -125,7 +130,7 @@ enum LedgerService {
     @MainActor
     static func recordDistribution(
         to customer: Customer,
-        items: [(product: Product, quantity: Decimal)],
+        items: [(product: Product, quantity: Decimal, unitPriceOverride: Decimal?)],
         paymentType: PaymentType = .cash,
         installmentConfig: InstallmentConfig? = nil,
         note: String? = nil,
@@ -134,7 +139,12 @@ enum LedgerService {
         in context: ModelContext
     ) throws {
         let transactionItems = items.map { item in
-            TransactionItem(product: item.product, quantity: item.quantity, paymentType: paymentType)
+            // If there's a custom price override, use it; otherwise use the payment type default
+            if let override = item.unitPriceOverride {
+                return TransactionItem(product: item.product, quantity: item.quantity, unitPriceOverride: override)
+            } else {
+                return TransactionItem(product: item.product, quantity: item.quantity, paymentType: paymentType)
+            }
         }
         let total = transactionItems.reduce(Decimal(0)) { $0 + $1.lineTotal }
 
@@ -602,16 +612,5 @@ extension LedgerService {
         
         // Save all deletions
         try? context.save()
-    }
-}
-
-// MARK: - Decimal Rounding Extension
-
-private extension Decimal {
-    func rounded(scale: Int, roundingMode: NSDecimalNumber.RoundingMode) -> Decimal {
-        var value = self
-        var result = Decimal()
-        NSDecimalRound(&result, &value, scale, roundingMode)
-        return result
     }
 }

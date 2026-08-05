@@ -39,7 +39,7 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], in: context)
 
         #expect(customer.balance == 500)
     }
@@ -49,7 +49,7 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], in: context)
         try LedgerService.recordPayment(from: customer, amount: 200, in: context)
 
         #expect(customer.balance == 300)
@@ -60,8 +60,8 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], in: context)
-        try LedgerService.recordReturn(from: customer, items: [(product, 4)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], in: context)
+        try LedgerService.recordReturn(from: customer, items: [(product: product, quantity: 4)], in: context)
 
         #expect(customer.balance == 300)
     }
@@ -73,9 +73,9 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context, cashPrice: 50)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], in: context)
         product.cashPrice = 60
-        try LedgerService.recordReturn(from: customer, items: [(product, 5)], in: context)
+        try LedgerService.recordReturn(from: customer, items: [(product: product, quantity: 5)], in: context)
 
         // Credited 5 × 50 (distribution price), not 5 × 60 (current price)
         #expect(customer.balance == 250)
@@ -88,10 +88,10 @@ struct LedgerTests {
         let t1 = Date(timeIntervalSince1970: 1_000)
         let t2 = Date(timeIntervalSince1970: 2_000)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], occurredAt: t1, in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], occurredAt: t1, in: context)
         product.cashPrice = 60
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], occurredAt: t2, in: context)
-        try LedgerService.recordReturn(from: customer, items: [(product, 15)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], occurredAt: t2, in: context)
+        try LedgerService.recordReturn(from: customer, items: [(product: product, quantity: 15)], in: context)
 
         // Credit = 10 × 50 + 5 × 60 = 800; balance = 500 + 600 − 800
         #expect(customer.balance == 300)
@@ -103,8 +103,8 @@ struct LedgerTests {
         let (customer, product) = makeCustomerAndProduct(in: context, cashPrice: 50)
         let t1 = Date(timeIntervalSince1970: 1_000)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], occurredAt: t1, in: context)
-        try LedgerService.recordReturn(from: customer, items: [(product, 4)], occurredAt: Date(timeIntervalSince1970: 2_000), in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], occurredAt: t1, in: context)
+        try LedgerService.recordReturn(from: customer, items: [(product: product, quantity: 4)], occurredAt: Date(timeIntervalSince1970: 2_000), in: context)
 
         let lots = LedgerService.outstandingLots(for: customer, product: product)
         #expect(lots.count == 1)
@@ -118,10 +118,10 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], in: context)
 
         #expect(throws: LedgerError.insufficientReturnableQuantity) {
-            try LedgerService.recordReturn(from: customer, items: [(product, 11)], in: context)
+            try LedgerService.recordReturn(from: customer, items: [(product: product, quantity: 11)], in: context)
         }
         #expect(customer.balance == 500)
     }
@@ -133,7 +133,7 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], in: context)
         let distribution = try #require(customer.transactions.first { $0.type == .distribution })
 
         try LedgerService.reverse(distribution, in: context)
@@ -146,7 +146,7 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], in: context)
         try LedgerService.recordPayment(from: customer, amount: 200, in: context)
         let payment = try #require(customer.transactions.first { $0.type == .payment })
 
@@ -160,7 +160,7 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], in: context)
         let distribution = try #require(customer.transactions.first { $0.type == .distribution })
         try LedgerService.reverse(distribution, in: context)
 
@@ -175,7 +175,7 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], in: context)
         let distribution = try #require(customer.transactions.first { $0.type == .distribution })
         try LedgerService.reverse(distribution, in: context)
 
@@ -190,9 +190,9 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context, cashPrice: 50)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 20)], occurredAt: Date(timeIntervalSince1970: 1_000), in: context)  // +1000
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 20, unitPriceOverride: nil)], occurredAt: Date(timeIntervalSince1970: 1_000), in: context)  // +1000
         try LedgerService.recordPayment(from: customer, amount: 400, in: context)                                                                 // −400
-        try LedgerService.recordReturn(from: customer, items: [(product, 5)], occurredAt: Date(timeIntervalSince1970: 2_000), in: context)        // −250
+        try LedgerService.recordReturn(from: customer, items: [(product: product, quantity: 5)], occurredAt: Date(timeIntervalSince1970: 2_000), in: context)        // −250
         let payment = try #require(customer.transactions.first { $0.type == .payment })
         try LedgerService.reverse(payment, in: context)                                                                                           // +400
 
@@ -205,8 +205,8 @@ struct LedgerTests {
         let context = container.mainContext
         let (customer, product) = makeCustomerAndProduct(in: context)
 
-        try LedgerService.recordDistribution(to: customer, items: [(product, 10)], in: context)
-        try LedgerService.recordReturn(from: customer, items: [(product, 4)], in: context)
+        try LedgerService.recordDistribution(to: customer, items: [(product: product, quantity: 10, unitPriceOverride: nil)], in: context)
+        try LedgerService.recordReturn(from: customer, items: [(product: product, quantity: 4)], in: context)
 
         #expect(product.currentStock == 94)  // 100 − 10 + 4
     }
@@ -253,7 +253,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 10)],
+            items: [(product: product, quantity: 10, unitPriceOverride: nil)],
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -277,7 +277,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 10)],  // 10 × 100 = 1000
+            items: [(product: product, quantity: 10, unitPriceOverride: nil)],  // 10 × 100 = 1000
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -304,7 +304,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 5)],
+            items: [(product: product, quantity: 5, unitPriceOverride: nil)],
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -339,7 +339,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 10)],  // 10 × 100 = 1000
+            items: [(product: product, quantity: 10, unitPriceOverride: nil)],  // 10 × 100 = 1000
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -368,7 +368,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 1)],  // 1 × 300 = 300
+            items: [(product: product, quantity: 1, unitPriceOverride: nil)],  // 1 × 300 = 300
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -399,7 +399,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 1)],
+            items: [(product: product, quantity: 1, unitPriceOverride: nil)],
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -429,7 +429,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 1)],
+            items: [(product: product, quantity: 1, unitPriceOverride: nil)],
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -463,7 +463,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 1)],
+            items: [(product: product, quantity: 1, unitPriceOverride: nil)],
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -493,7 +493,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 1)],
+            items: [(product: product, quantity: 1, unitPriceOverride: nil)],
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -521,7 +521,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 1)],
+            items: [(product: product, quantity: 1, unitPriceOverride: nil)],
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -552,7 +552,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 1)],  // 600 total
+            items: [(product: product, quantity: 1, unitPriceOverride: nil)],  // 600 total
             paymentType: .installment,
             installmentConfig: config,
             in: context
@@ -588,7 +588,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 5)],
+            items: [(product: product, quantity: 5, unitPriceOverride: nil)],
             paymentType: .cash,
             in: context
         )
@@ -606,7 +606,7 @@ struct InstallmentTests {
         // Installment payment type but no config
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 5)],
+            items: [(product: product, quantity: 5, unitPriceOverride: nil)],
             paymentType: .installment,
             installmentConfig: nil,
             in: context
@@ -631,7 +631,7 @@ struct InstallmentTests {
         
         try LedgerService.recordDistribution(
             to: customer,
-            items: [(product, 1)],
+            items: [(product: product, quantity: 1, unitPriceOverride: nil)],
             paymentType: .installment,
             installmentConfig: config,
             in: context

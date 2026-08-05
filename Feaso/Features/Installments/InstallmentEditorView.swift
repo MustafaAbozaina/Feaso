@@ -278,17 +278,6 @@ private struct InstallmentEditRow: View {
     }
 }
 
-// MARK: - Decimal Extension
-
-private extension Decimal {
-    func rounded(scale: Int, roundingMode: NSDecimalNumber.RoundingMode) -> Decimal {
-        var value = self
-        var result = Decimal()
-        NSDecimalRound(&result, &value, scale, roundingMode)
-        return result
-    }
-}
-
 #Preview {
     NavigationStack {
         InstallmentEditorView(
