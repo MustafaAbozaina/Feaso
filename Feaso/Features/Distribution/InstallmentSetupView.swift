@@ -233,11 +233,51 @@ struct InstallmentSetupView: View {
         Binding(
             get: { index < customAmountsStrings.count ? customAmountsStrings[index] : "" },
             set: { newValue in
-                if index < customAmountsStrings.count {
-                    customAmountsStrings[index] = newValue
-                }
+                guard index < customAmountsStrings.count else { return }
+                
+                // Update the current field
+                customAmountsStrings[index] = newValue
+                
+                // Redistribute remaining amount to subsequent fields
+                redistributeAmounts(afterIndex: index)
             }
         )
+    }
+    
+    /// Redistributes the remaining amount equally across all fields after the given index
+    private func redistributeAmounts(afterIndex editedIndex: Int) {
+        let fieldsAfter = numberOfInstallments - editedIndex - 1
+        guard fieldsAfter > 0 else { return }
+        
+        // Calculate sum of amounts from index 0 to editedIndex
+        let sumBeforeAndIncluding = (0...editedIndex).reduce(Decimal.zero) { sum, i in
+            let value = i < customAmountsStrings.count ? (Decimal(string: customAmountsStrings[i]) ?? Decimal.zero) : Decimal.zero
+            return sum + value
+        }
+        
+        // Calculate remaining amount to distribute
+        let remaining = totalAmount - sumBeforeAndIncluding
+        
+        // Don't redistribute if remaining is negative (user entered more than total)
+        guard remaining >= Decimal.zero else { return }
+        
+        // Distribute equally across remaining fields
+        let baseAmount = remaining / Decimal(fieldsAfter)
+        let roundedBase = baseAmount.rounded(scale: 2, roundingMode: .down)
+        let totalRounded = roundedBase * Decimal(fieldsAfter)
+        let lastFieldExtra = remaining - totalRounded
+        
+        // Update remaining fields
+        for i in (editedIndex + 1)..<numberOfInstallments {
+            if i < customAmountsStrings.count {
+                if i == numberOfInstallments - 1 {
+                    // Last field gets any rounding remainder
+                    customAmountsStrings[i] = "\(roundedBase + lastFieldExtra)"
+                } else {
+                    customAmountsStrings[i] = "\(roundedBase)"
+                }
+            }
+        }
     }
     
     private func dateBinding(for index: Int) -> Binding<Date> {
