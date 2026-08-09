@@ -15,6 +15,16 @@ struct PriceLot {
 
 enum LedgerService {
     
+    // MARK: - Audit Trail Helper
+    
+    /// Stamps the current user's info on a transaction for audit trail
+    private static func stampRecordedBy(_ transaction: Transaction) {
+        let auth = AuthService.shared
+        transaction.recordedByUserId = auth.uid
+        transaction.recordedByName = auth.displayName
+        transaction.recordedByEmail = auth.email
+    }
+    
     // MARK: - Walk-in Customer for Quick Sales
     
     /// The special name used for anonymous walk-in customers
@@ -72,6 +82,7 @@ enum LedgerService {
             attachmentFileName: attachmentFileName,
             paymentType: .cash
         )
+        stampRecordedBy(distributionTransaction)
         context.insert(distributionTransaction)
         
         for item in transactionItems {
@@ -87,6 +98,7 @@ enum LedgerService {
             occurredAt: occurredAt,
             note: note != nil ? "Payment for: \(note!)" : "Quick sale payment"
         )
+        stampRecordedBy(paymentTransaction)
         context.insert(paymentTransaction)
         
         try context.save()
@@ -157,6 +169,7 @@ enum LedgerService {
             attachmentFileName: attachmentFileName,
             paymentType: paymentType
         )
+        stampRecordedBy(transaction)
         context.insert(transaction)
 
         for item in transactionItems {
@@ -292,6 +305,7 @@ enum LedgerService {
             occurredAt: paidDate,
             note: paymentNote
         )
+        stampRecordedBy(payment)
         context.insert(payment)
         
         // Link the payment to the installment
@@ -354,6 +368,7 @@ enum LedgerService {
             note: note,
             attachmentFileName: attachmentFileName
         )
+        stampRecordedBy(transaction)
         context.insert(transaction)
 
         for item in transactionItems {
@@ -386,6 +401,7 @@ enum LedgerService {
             note: note,
             attachmentFileName: attachmentFileName
         )
+        stampRecordedBy(transaction)
         context.insert(transaction)
         try context.save()
         
@@ -431,6 +447,7 @@ enum LedgerService {
             note: note,
             attachmentFileName: attachmentFileName
         )
+        stampRecordedBy(transaction)
         context.insert(transaction)
 
         for item in transactionItems {
@@ -465,6 +482,7 @@ enum LedgerService {
             customer: customer,
             note: String(localized: "Reversal")
         )
+        stampRecordedBy(reversal)
         reversal.reverses = original
         original.reversedBy = reversal
         context.insert(reversal)

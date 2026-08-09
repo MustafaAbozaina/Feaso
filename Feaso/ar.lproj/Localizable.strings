@@ -474,3 +474,6 @@
 "%lld%% discount" = "خصم %lld%%";
 "was %@" = "كان %@";
 
+// MARK: - Audit Trail
+"Recorded by" = "سُجّل بواسطة";
+

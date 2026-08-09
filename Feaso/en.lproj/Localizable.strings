@@ -475,3 +475,6 @@
 "%lld%% discount" = "%lld%% discount";
 "was %@" = "was %@";
 
+// MARK: - Audit Trail
+"Recorded by" = "Recorded by";
+

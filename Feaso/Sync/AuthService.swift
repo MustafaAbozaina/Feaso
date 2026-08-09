@@ -31,6 +31,9 @@ final class AuthService {
     /// Convenience: current user's email
     var email: String? { currentUser?.email }
     
+    /// Convenience: current user's display name
+    var displayName: String? { currentUser?.displayName }
+    
     // MARK: - Init
     
     private init(provider: AuthProvider = FirebaseAuthProvider.shared) {

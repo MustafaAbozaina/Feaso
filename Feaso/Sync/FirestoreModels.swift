@@ -155,6 +155,11 @@ struct FirestoreTransaction: Codable {
     var reversesId: String?
     var updatedAt: Timestamp?        // Optional for backward compatibility
     
+    // Audit trail fields
+    var recordedByUserId: String?
+    var recordedByName: String?
+    var recordedByEmail: String?
+    
     init(from transaction: Transaction) {
         self.id = transaction.id.uuidString
         self.typeRaw = transaction.typeRaw
@@ -168,6 +173,9 @@ struct FirestoreTransaction: Codable {
         self.reversedById = transaction.reversedBy?.id.uuidString
         self.reversesId = transaction.reverses?.id.uuidString
         self.updatedAt = Timestamp(date: .now)
+        self.recordedByUserId = transaction.recordedByUserId
+        self.recordedByName = transaction.recordedByName
+        self.recordedByEmail = transaction.recordedByEmail
     }
     
     /// Direct initializer that accepts pre-resolved values for background contexts
@@ -182,7 +190,10 @@ struct FirestoreTransaction: Codable {
         paymentTypeRaw: String?,
         customerId: String?,
         reversedById: String?,
-        reversesId: String?
+        reversesId: String?,
+        recordedByUserId: String? = nil,
+        recordedByName: String? = nil,
+        recordedByEmail: String? = nil
     ) {
         self.id = id
         self.typeRaw = typeRaw
@@ -196,6 +207,9 @@ struct FirestoreTransaction: Codable {
         self.reversedById = reversedById
         self.reversesId = reversesId
         self.updatedAt = Timestamp(date: .now)
+        self.recordedByUserId = recordedByUserId
+        self.recordedByName = recordedByName
+        self.recordedByEmail = recordedByEmail
     }
     
     func toTransaction() -> Transaction {
@@ -213,6 +227,9 @@ struct FirestoreTransaction: Codable {
         )
         transaction.id = UUID(uuidString: id) ?? UUID()
         transaction.createdAt = createdAt?.dateValue() ?? Date()
+        transaction.recordedByUserId = recordedByUserId
+        transaction.recordedByName = recordedByName
+        transaction.recordedByEmail = recordedByEmail
         // Relationships (customer, items, installments) are set separately
         return transaction
     }

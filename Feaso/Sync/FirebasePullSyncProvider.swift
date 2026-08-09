@@ -125,6 +125,9 @@ final class FirebasePullSyncProvider: SyncProvider {
                 customerId: transaction.customer?.id.uuidString,
                 reversedById: transaction.reversedBy?.id.uuidString,
                 reversesId: transaction.reverses?.id.uuidString,
+                recordedByUserId: transaction.recordedByUserId,
+                recordedByName: transaction.recordedByName,
+                recordedByEmail: transaction.recordedByEmail,
                 items: transaction.items.map { item in
                     (id: item.id, productId: item.product?.id.uuidString ?? "", quantity: item.quantity, unitPrice: item.unitPrice)
                 },
@@ -148,7 +151,10 @@ final class FirebasePullSyncProvider: SyncProvider {
             paymentTypeRaw: transactionData.paymentTypeRaw,
             customerId: transactionData.customerId,
             reversedById: transactionData.reversedById,
-            reversesId: transactionData.reversesId
+            reversesId: transactionData.reversesId,
+            recordedByUserId: transactionData.recordedByUserId,
+            recordedByName: transactionData.recordedByName,
+            recordedByEmail: transactionData.recordedByEmail
         )
         
         // Push transaction
@@ -287,13 +293,17 @@ final class FirebasePullSyncProvider: SyncProvider {
                     
                     await MainActor.run {
                         if existingTransactionIds.contains(uuid) {
-                            // Already exists - update customer relationship if needed
+                            // Already exists - update customer relationship and audit trail if needed
                             if let existing = fetchLocal(Transaction.self, id: uuid, in: context) {
                                 if let customerId = firestoreTransaction.customerId,
                                    let customer = customersMap[customerId],
                                    existing.customer?.id.uuidString != customerId {
                                     existing.customer = customer
                                 }
+                                // Update audit trail fields from Firestore
+                                existing.recordedByUserId = firestoreTransaction.recordedByUserId
+                                existing.recordedByName = firestoreTransaction.recordedByName
+                                existing.recordedByEmail = firestoreTransaction.recordedByEmail
                                 transactionsMap[firestoreTransaction.id] = existing
                             }
                         } else {

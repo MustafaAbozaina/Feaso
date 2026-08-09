@@ -394,6 +394,17 @@ struct TransactionDetailView: View {
                     )
                 }
                 
+                // Recorded by
+                if transaction.recordedByUserId != nil {
+                    Divider()
+                        .padding(.horizontal, Spacing.md)
+                    
+                    DetailRow(
+                        label: String(localized: "Recorded by"),
+                        value: transaction.recordedByDisplay
+                    )
+                }
+                
                 // Transaction ID
                 Divider()
                     .padding(.horizontal, Spacing.md)

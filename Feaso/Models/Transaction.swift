@@ -16,6 +16,26 @@ final class Transaction {
     /// Payment type for distributions (cash or installment). Nil for non-distribution transactions.
     var paymentTypeRaw: String?
     
+    // MARK: - Audit Trail
+    
+    /// The user ID who recorded this transaction
+    var recordedByUserId: String?
+    /// The display name of the user who recorded this transaction
+    var recordedByName: String?
+    /// The email of the user who recorded this transaction (fallback for display)
+    var recordedByEmail: String?
+    
+    /// Returns the best display value for who recorded this transaction
+    var recordedByDisplay: String {
+        if let name = recordedByName, !name.isEmpty {
+            return name
+        }
+        if let email = recordedByEmail, !email.isEmpty {
+            return email
+        }
+        return "-"
+    }
+    
     var customer: Customer?
     
     @Relationship(deleteRule: .cascade, inverse: \TransactionItem.transaction)
