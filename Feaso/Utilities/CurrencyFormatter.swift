@@ -5,7 +5,8 @@ enum CurrencyFormatter {
         let f = NumberFormatter()
         f.numberStyle = .decimal
         f.groupingSeparator = ","
-        f.maximumFractionDigits = 0
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 2
         return f
     }()
     

@@ -62,6 +62,13 @@ struct QuantityStepper: View {
                     .onSubmit {
                         commitEdit()
                     }
+                    .onChange(of: editText) { _, newText in
+                        updateQuantityFromText(newText)
+                    }
+                    .onChange(of: quantity) { _, newQuantity in
+                        // Sync editText when quantity changes externally (e.g., +/- buttons)
+                        editText = unit.format(newQuantity)
+                    }
                     .onChange(of: isTextFieldFocused) { _, focused in
                         if !focused {
                             commitEdit()
@@ -82,7 +89,7 @@ struct QuantityStepper: View {
                     Text(unit.format(quantity))
                         .font(.body)
                         .fontWeight(.semibold)
-                        .foregroundStyle(showWarning ? Color.Theme.warning : Color.Theme.ink)                    
+                        .foregroundStyle(showWarning ? Color.Theme.warning : Color.Theme.ink)
                 }
                 .frame(minWidth: 48)
                 .padding(.horizontal, Spacing.xs)
@@ -121,6 +128,17 @@ struct QuantityStepper: View {
         // Delay focus to ensure TextField is in view hierarchy
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             isTextFieldFocused = true
+        }
+    }
+    
+    private func updateQuantityFromText(_ text: String) {
+        let cleanedText = text.replacingOccurrences(of: ",", with: ".")
+        if let newValue = Decimal(string: cleanedText), newValue > 0 {
+            if unit.allowsDecimals {
+                quantity = newValue
+            } else {
+                quantity = Decimal(Int(truncating: newValue as NSDecimalNumber))
+            }
         }
     }
     
