@@ -63,7 +63,12 @@ struct QuantityStepper: View {
                         commitEdit()
                     }
                     .onChange(of: editText) { _, newText in
-                        updateQuantityFromText(newText)
+                        // Filter to ASCII digits and decimal point only
+                        let filtered = newText.filter { ($0 >= "0" && $0 <= "9") || $0 == "." }
+                        if filtered != newText {
+                            editText = filtered
+                        }
+                        updateQuantityFromText(filtered)
                     }
                     .onChange(of: quantity) { _, newQuantity in
                         // Sync editText when quantity changes externally (e.g., +/- buttons)

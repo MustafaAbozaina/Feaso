@@ -251,6 +251,7 @@ private struct InstallmentEditRow: View {
                     .frame(width: 120)
                     .multilineTextAlignment(.trailing)
                     .disabled(installment.isPaid)
+                    .decimalInput($amountText)
                     .onChange(of: amountText) { _, newValue in
                         if let decimal = Decimal(string: newValue) {
                             installment.amount = decimal

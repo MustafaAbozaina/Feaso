@@ -104,6 +104,7 @@ struct RecordPaymentView: View {
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.center)
                 .focused($isAmountFocused)
+                .decimalInput($amountText)
             
             Text(String(localized: "\(customer.name) currently owes \(CurrencyFormatter.string(customer.balance)) \(CurrencyFormatter.symbol)"))
                 .font(.caption)

@@ -84,6 +84,7 @@ struct ProductEditorView: View {
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
+                        .decimalInput($costPriceText)
                     Text(CurrencyFormatter.symbol)
                         .foregroundStyle(Color.Theme.ink3)
                 }
@@ -95,6 +96,7 @@ struct ProductEditorView: View {
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
+                        .decimalInput($cashPriceText)
                     Text(CurrencyFormatter.symbol)
                         .foregroundStyle(Color.Theme.ink3)
                 }
@@ -106,6 +108,7 @@ struct ProductEditorView: View {
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
+                        .decimalInput($installmentPriceText)
                     Text(CurrencyFormatter.symbol)
                         .foregroundStyle(Color.Theme.ink3)
                 }
@@ -169,6 +172,7 @@ struct ProductEditorView: View {
                         .keyboardType(activeUnit.allowsDecimals ? .decimalPad : .numberPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
+                        .decimalInput($openingStockText)
                     Text(activeUnit.symbol)
                         .foregroundStyle(Color.Theme.ink3)
                         .frame(width: 30, alignment: .leading)
@@ -181,6 +185,7 @@ struct ProductEditorView: View {
                         .keyboardType(activeUnit.allowsDecimals ? .decimalPad : .numberPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
+                        .decimalInput($reorderThresholdText)
                     Text(activeUnit.symbol)
                         .foregroundStyle(Color.Theme.ink3)
                         .frame(width: 30, alignment: .leading)

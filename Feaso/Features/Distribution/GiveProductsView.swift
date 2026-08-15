@@ -712,6 +712,7 @@ private struct PriceEditorSheet: View {
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.center)
                             .focused($isFocused)
+                            .decimalInput($priceText)
                         
                         Text(CurrencyFormatter.symbol)
                             .font(.title3)

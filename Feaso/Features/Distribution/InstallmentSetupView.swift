@@ -168,6 +168,7 @@ struct InstallmentSetupView: View {
                                         .keyboardType(.decimalPad)
                                         .textFieldStyle(.roundedBorder)
                                         .frame(width: 100)
+                                        .decimalInput(amountBinding(for: index))
                                 } else {
                                     HStack(spacing: Spacing.xs) {
                                         Text(CurrencyFormatter.string(calculatedAmounts[index]))
