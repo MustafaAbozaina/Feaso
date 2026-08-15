@@ -652,3 +652,134 @@ struct InstallmentTests {
         #expect(transaction.totalInstallmentAmount == 400)
     }
 }
+// MARK: - LineDraft Discount/Markup Tests
+
+@MainActor
+struct LineDraftTests {
+    
+    private func makeProduct(cashPrice: Decimal = 100, installmentPrice: Decimal = 120) -> Product {
+        Product(name: "Test Product", costPrice: 80, cashPrice: cashPrice, installmentPrice: installmentPrice, openingStock: 50)
+    }
+    
+    // MARK: - Discount Percentage
+    
+    @Test func noCustomPriceReturnsNilDiscount() {
+        let product = makeProduct(cashPrice: 100)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: nil)
+        
+        #expect(line.discountPercentage == nil)
+        #expect(line.discountDisplayText == nil)
+    }
+    
+    @Test func samePriceReturnsZeroDiscount() {
+        let product = makeProduct(cashPrice: 100)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 100)
+        
+        #expect(line.discountPercentage == 0)
+        #expect(line.discountDisplayText == nil) // Zero discount shows nothing
+    }
+    
+    @Test func lowerPriceCalculatesDiscount() {
+        let product = makeProduct(cashPrice: 100)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 80)
+        
+        // (100 - 80) / 100 * 100 = 20%
+        #expect(line.discountPercentage == 20)
+    }
+    
+    @Test func higherPriceCalculatesNegativeMarkup() {
+        let product = makeProduct(cashPrice: 100)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 110)
+        
+        // (100 - 110) / 100 * 100 = -10%
+        #expect(line.discountPercentage == -10)
+    }
+    
+    @Test func fiftyPercentDiscount() {
+        let product = makeProduct(cashPrice: 200)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 100)
+        
+        #expect(line.discountPercentage == 50)
+    }
+    
+    @Test func thirtyThreePercentDiscount() {
+        let product = makeProduct(cashPrice: 150)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 100)
+        
+        // (150 - 100) / 150 * 100 = 33.33...%
+        let percentage = line.discountPercentage!
+        #expect(percentage > 33 && percentage < 34)
+    }
+    
+    @Test func twentyFivePercentMarkup() {
+        let product = makeProduct(cashPrice: 100)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 125)
+        
+        // (100 - 125) / 100 * 100 = -25%
+        #expect(line.discountPercentage == -25)
+    }
+    
+    // MARK: - Installment Price Discount
+    
+    @Test func installmentPriceDiscountUsesInstallmentBasePrice() {
+        let product = makeProduct(cashPrice: 100, installmentPrice: 150)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .installment, unitPriceOverride: 120)
+        
+        // Base price for installment is 150, override is 120
+        // (150 - 120) / 150 * 100 = 20%
+        #expect(line.discountPercentage == 20)
+    }
+    
+    @Test func installmentPriceMarkupUsesInstallmentBasePrice() {
+        let product = makeProduct(cashPrice: 100, installmentPrice: 150)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .installment, unitPriceOverride: 180)
+        
+        // (150 - 180) / 150 * 100 = -20%
+        #expect(line.discountPercentage == -20)
+    }
+    
+    // MARK: - Display Text
+    
+    @Test func discountDisplayTextShowsOff() {
+        let product = makeProduct(cashPrice: 100)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 80)
+        
+        #expect(line.discountDisplayText == "20% off")
+    }
+    
+    @Test func markupDisplayTextShowsMarkup() {
+        let product = makeProduct(cashPrice: 100)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 115)
+        
+        #expect(line.discountDisplayText == "15% markup")
+    }
+    
+    // MARK: - Edge Cases
+    
+    @Test func zeroPriceProductReturnsNilDiscount() {
+        let product = Product(name: "Free Item", costPrice: 0, cashPrice: 0, installmentPrice: 0, openingStock: 10)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 50)
+        
+        // Division by zero protection
+        #expect(line.discountPercentage == nil)
+    }
+    
+    @Test func verySmallDiscountRoundsCorrectly() {
+        let product = makeProduct(cashPrice: 1000)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 995)
+        
+        // (1000 - 995) / 1000 * 100 = 0.5%
+        let percentage = line.discountPercentage!
+        #expect(percentage == Decimal(string: "0.5"))
+    }
+    
+    @Test func fullDiscountIsFreeProduct() {
+        let product = makeProduct(cashPrice: 100)
+        let line = LineDraft(product: product, quantity: 1, paymentType: .cash, unitPriceOverride: 0)
+        
+        // (100 - 0) / 100 * 100 = 100%
+        #expect(line.discountPercentage == 100)
+        #expect(line.discountDisplayText == "100% off")
+    }
+}
+
