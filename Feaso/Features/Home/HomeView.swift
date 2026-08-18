@@ -3,90 +3,9 @@ import SwiftData
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
-    
-    @Query(filter: #Predicate<Transaction> { $0.reversedBy == nil })
-    private var allTransactions: [Transaction]
-    
-    @Query(filter: #Predicate<Product> { $0.deletedAt == nil })
-    private var products: [Product]
-    
-    @Query(filter: #Predicate<Customer> { $0.deletedAt == nil })
-    private var customers: [Customer]
-    
-    @Query(filter: #Predicate<Installment> { $0.isPaid == false })
-    private var unpaidInstallments: [Installment]
-    
+    @State private var viewModel = HomeViewModel()
     @State private var showingQuickSale = false
     @State private var selectedTab: Tab = .home
-    
-    // MARK: - Computed Properties
-    
-    private var todayTransactions: [Transaction] {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        return allTransactions.filter { calendar.isDate($0.occurredAt, inSameDayAs: today) }
-    }
-    
-    private var todayCashReceived: Decimal {
-        // Cash from payments + Quick sales (distributions with immediate payment)
-        let payments = todayTransactions
-            .filter { $0.type == .payment }
-            .reduce(Decimal(0)) { $0 + abs($1.amount) }
-        return payments
-    }
-    
-    private var todayCreditGiven: Decimal {
-        // Distributions with installment payment type
-        todayTransactions
-            .filter { $0.type == .distribution && $0.paymentType == .installment }
-            .reduce(Decimal(0)) { $0 + $1.amount }
-    }
-    
-    private var todaySalesCount: Int {
-        todayTransactions.filter { $0.type == .distribution }.count
-    }
-    
-    private var overdueInstallments: [Installment] {
-        unpaidInstallments.filter { $0.isOverdue }
-    }
-    
-    private var dueThisWeekInstallments: [Installment] {
-        let endOfWeek = WorkWeekManager.endOfWorkWeek()
-        return unpaidInstallments.filter { !$0.isOverdue && $0.dueDate <= endOfWeek }
-    }
-    
-    private var totalOutstanding: Decimal {
-        customers.reduce(Decimal(0)) { sum, customer in
-            sum + max(0, customer.balance)
-        }
-    }
-    
-    private var overdueAmount: Decimal {
-        overdueInstallments.reduce(Decimal(0)) { $0 + $1.amount }
-    }
-    
-    private var lowStockProducts: [Product] {
-        products.filter { $0.stockStatus == .low || $0.stockStatus == .outOfStock }
-    }
-    
-    private var thisMonthTransactions: [Transaction] {
-        let calendar = Calendar.current
-        let now = Date()
-        let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
-        return allTransactions.filter { $0.occurredAt >= startOfMonth }
-    }
-    
-    private var thisMonthSales: Decimal {
-        thisMonthTransactions
-            .filter { $0.type == .distribution }
-            .reduce(Decimal(0)) { $0 + $1.amount }
-    }
-    
-    private var thisMonthCollected: Decimal {
-        thisMonthTransactions
-            .filter { $0.type == .payment }
-            .reduce(Decimal(0)) { $0 + abs($1.amount) }
-    }
     
     // MARK: - Body
     
@@ -120,8 +39,20 @@ struct HomeView: View {
                 QuickSaleView()
             }
         }
+        .task {
+            await viewModel.loadData(context: modelContext)
+        }
         .refreshable {
             await SyncService.shared.refresh()
+            await viewModel.loadData(context: modelContext)
+        }
+        .onChange(of: showingQuickSale) { _, isPresented in
+            // Refresh data when quick sale sheet is dismissed
+            if !isPresented {
+                Task {
+                    await viewModel.loadData(context: modelContext)
+                }
+            }
         }
     }
     
@@ -161,7 +92,7 @@ struct HomeView: View {
                             .font(.caption)
                             .foregroundStyle(Color.Theme.ink2)
                     }
-                    Text(CurrencyFormatter.string(todayCashReceived))
+                    Text(CurrencyFormatter.string(viewModel.todayCashReceived))
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Theme.ink)
@@ -177,7 +108,7 @@ struct HomeView: View {
                             .font(.caption)
                             .foregroundStyle(Color.Theme.ink2)
                     }
-                    Text(CurrencyFormatter.string(todayCreditGiven))
+                    Text(CurrencyFormatter.string(viewModel.todayCreditGiven))
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Theme.ink)
@@ -193,7 +124,7 @@ struct HomeView: View {
                             .font(.caption)
                             .foregroundStyle(Color.Theme.ink2)
                     }
-                    Text("\(todaySalesCount)")
+                    Text("\(viewModel.todaySalesCount)")
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.Theme.ink)
@@ -205,13 +136,16 @@ struct HomeView: View {
     // MARK: - Collections Due Section
     
     private var collectionsDueSection: some View {
-        DashboardSectionWithTabNavigation(
+        let overdueCount = viewModel.overdueInstallmentsCount
+        let dueThisWeekCount = viewModel.dueThisWeekInstallmentsCount
+        
+        return DashboardSectionWithTabNavigation(
             title: String(localized: "Collections Due"),
             targetTab: .collections,
             selectedTab: $selectedTab
         ) {
             HStack(spacing: Spacing.lg) {
-                if overdueInstallments.isEmpty && dueThisWeekInstallments.isEmpty {
+                if overdueCount == 0 && dueThisWeekCount == 0 {
                     HStack(spacing: Spacing.xs) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(Color.Theme.success)
@@ -220,22 +154,22 @@ struct HomeView: View {
                             .foregroundStyle(Color.Theme.ink2)
                     }
                 } else {
-                    if !overdueInstallments.isEmpty {
+                    if overdueCount > 0 {
                         HStack(spacing: Spacing.xs) {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .foregroundStyle(Color.Theme.danger)
-                            Text(String(localized: "\(overdueInstallments.count) overdue"))
+                            Text(String(localized: "\(overdueCount) overdue"))
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                                 .foregroundStyle(Color.Theme.danger)
                         }
                     }
                     
-                    if !dueThisWeekInstallments.isEmpty {
+                    if dueThisWeekCount > 0 {
                         HStack(spacing: Spacing.xs) {
                             Image(systemName: "clock.fill")
                                 .foregroundStyle(Color.Theme.warning)
-                            Text(String(localized: "\(dueThisWeekInstallments.count) due this week"))
+                            Text(String(localized: "\(dueThisWeekCount) due this week"))
                                 .font(.subheadline)
                                 .foregroundStyle(Color.Theme.ink2)
                         }
@@ -250,7 +184,9 @@ struct HomeView: View {
     // MARK: - Outstanding Section
     
     private var outstandingSection: some View {
-        DashboardSectionWithTabNavigation(
+        let overdueAmount = viewModel.overdueAmount
+        
+        return DashboardSectionWithTabNavigation(
             title: String(localized: "Outstanding"),
             targetTab: .customers,
             selectedTab: $selectedTab
@@ -261,7 +197,7 @@ struct HomeView: View {
                         .font(.caption)
                         .foregroundStyle(Color.Theme.ink2)
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(CurrencyFormatter.string(totalOutstanding))
+                        Text(CurrencyFormatter.string(viewModel.totalOutstanding))
                             .font(.title3)
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.Theme.ink)
@@ -296,7 +232,10 @@ struct HomeView: View {
     // MARK: - Inventory Section
     
     private var inventorySection: some View {
-        DashboardSectionWithTabNavigation(
+        let productsCount = viewModel.totalProductsCount
+        let lowStockCount = viewModel.lowStockProductsCount
+        
+        return DashboardSectionWithTabNavigation(
             title: String(localized: "Inventory"),
             targetTab: .products,
             selectedTab: $selectedTab
@@ -305,18 +244,18 @@ struct HomeView: View {
                 HStack(spacing: Spacing.xs) {
                     Image(systemName: "shippingbox.fill")
                         .foregroundStyle(Color.Theme.accent)
-                    Text(String(localized: "\(products.count) products"))
+                    Text(String(localized: "\(productsCount) products"))
                         .font(.subheadline)
                         .foregroundStyle(Color.Theme.ink)
                 }
                 
                 Spacer()
                 
-                if !lowStockProducts.isEmpty {
+                if lowStockCount > 0 {
                     HStack(spacing: Spacing.xs) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(Color.Theme.warning)
-                        Text(String(localized: "\(lowStockProducts.count) low stock"))
+                        Text(String(localized: "\(lowStockCount) low stock"))
                             .font(.subheadline)
                             .foregroundStyle(Color.Theme.warning)
                     }
@@ -338,7 +277,7 @@ struct HomeView: View {
                         .font(.caption)
                         .foregroundStyle(Color.Theme.ink2)
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(CurrencyFormatter.string(thisMonthSales))
+                        Text(CurrencyFormatter.string(viewModel.thisMonthSales))
                             .font(.title3)
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.Theme.ink)
@@ -355,7 +294,7 @@ struct HomeView: View {
                         .font(.caption)
                         .foregroundStyle(Color.Theme.ink2)
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(CurrencyFormatter.string(thisMonthCollected))
+                        Text(CurrencyFormatter.string(viewModel.thisMonthCollected))
                             .font(.title3)
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.Theme.success)
